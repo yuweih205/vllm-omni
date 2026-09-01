@@ -37,7 +37,8 @@ from vllm_omni.entrypoints.openai.video_api_utils import (
     encode_video_base64,
 )
 from vllm_omni.inputs.data import OmniDiffusionSamplingParams, OmniTextPrompt
-from vllm_omni.model_extras import should_preserve_reference_image_size
+from vllm_omni.model_extras import get_video_generation_defaults, should_preserve_reference_image_size
+from vllm_omni.model_extras.video_generation import VideoGenerationDefaults
 from vllm_omni.outputs.output_metadata import (
     DiffusionMetadataMapping,
     DiffusionMultimodalOutput,
@@ -111,6 +112,21 @@ class OmniOpenAIServingVideo:
         if callable(get_od_config):
             return get_od_config()
         return getattr(self._engine_client, "od_config", None)
+
+    def _resolve_video_generation_defaults(
+        self,
+        request: VideoGenerationRequest,
+    ) -> VideoGenerationDefaults | None:
+        """Resolve defaults owned by the active diffusion pipeline."""
+        od_config = self._resolve_diffusion_od_config()
+        model_class_name = None if od_config is None else getattr(od_config, "model_class_name", None)
+        try:
+            return get_video_generation_defaults(model_class_name, request.extra_params)
+        except (TypeError, ValueError) as exc:
+            raise HTTPException(
+                status_code=HTTPStatus.BAD_REQUEST.value,
+                detail=str(exc),
+            ) from exc
 
     @property
     def model_name(self) -> str | None:
@@ -207,7 +223,24 @@ class OmniOpenAIServingVideo:
             )
         provided_fields = request.model_fields_set
         fps_provided = self._request_fps_provided(request)
-        vp = request.resolve_video_params()
+        num_frames_provided = self._request_num_frames_provided(request)
+        video_defaults = self._resolve_video_generation_defaults(request)
+        if video_defaults is None:
+            vp = request.resolve_video_params()
+        else:
+            vp = request.resolve_video_params(
+                default_fps=video_defaults.fps,
+                default_num_frames=video_defaults.num_frames,
+            )
+            vp.width = vp.width or video_defaults.width
+            vp.height = vp.height or video_defaults.height
+            if num_frames_provided and vp.num_frames != video_defaults.num_frames:
+                raise HTTPException(
+                    status_code=HTTPStatus.BAD_REQUEST.value,
+                    detail=(f"This diffusion model requires {video_defaults.num_frames} frames; got {vp.num_frames}."),
+                )
+            if "num_inference_steps" not in provided_fields and gen_params.num_inference_steps is None:
+                gen_params.num_inference_steps = video_defaults.num_inference_steps
         if (
             input_image is not None
             and vp.width is not None
@@ -244,8 +277,9 @@ class OmniOpenAIServingVideo:
             gen_params.extra_args["short_edge"] = request.short_edge
         if request.start_time_seconds is not None:
             gen_params.extra_args["start_time_seconds"] = request.start_time_seconds
-        # Leave fps/frame_rate as None when the user did not provide fps.
-        if fps_provided and vp.fps is not None:
+        # Model-owned defaults are part of the serving contract. Other models
+        # preserve their engine defaults when the user did not provide fps.
+        if (fps_provided or video_defaults is not None) and vp.fps is not None:
             gen_params.fps = vp.fps
             gen_params.frame_rate = float(vp.fps)
         if "enable_frame_interpolation" in provided_fields:
@@ -464,6 +498,15 @@ class OmniOpenAIServingVideo:
         if video_params is None or "video_params" not in request.model_fields_set:
             return False
         return "fps" in video_params.model_fields_set and video_params.fps is not None
+
+    @staticmethod
+    def _request_num_frames_provided(request: VideoGenerationRequest) -> bool:
+        if "num_frames" in request.model_fields_set and request.num_frames is not None:
+            return True
+        video_params = request.video_params
+        if video_params is None or "video_params" not in request.model_fields_set:
+            return False
+        return "num_frames" in video_params.model_fields_set and video_params.num_frames is not None
 
     def _resolve_default_sampling_params(self) -> OmniDiffusionSamplingParams:
         default_sampling_params_list = getattr(self._engine_client, "default_sampling_params_list", None)
