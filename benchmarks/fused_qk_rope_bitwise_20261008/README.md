@@ -78,3 +78,10 @@ Current model source revisions: #7560 `e702a5253e2f58476468ddaaba836c63bcd3850b`
 The H200 eight-GPU job `hyw-omni-bitwise-model-1008-r3` is queued in MOVA2.0纯交付分区. This section records a prepared experiment and supplies no full-model performance claim yet.
 
 `prepare_model_sources.py` archives the four pinned Git revisions and generates the exact source manifests required by the model harness. Set its repository path to your local checkout, with those revisions fetched, and run it from a fresh artifact directory. `run_models.sh` contains the submitted eight-worker profile map and full command. `source_manifests/` retains the staged Python-source hashes. For another host, replace only the script's repository/output/runtime paths; keep the source revisions, model/input settings and numerical controls fixed.
+
+
+## Prepared production preset (not yet pushed to the six PRs)
+
+The common production patch in `production_validation/shared-numerics.patch` adds `VLLM_OMNI_FUSED_QK_NORM_ROPE_NUMERICS=fast|vllm_cuda_128`. Unset/`fast` retains the original arithmetic; `vllm_cuda_128` selects the two reference kwargs above for existing model callers. It does not change other model RMSNorm provider priorities. For the model benchmark, the original reference explicitly selects `ir.ops.rms_norm.set_default(["vllm_c"])` after entering the forward context.
+
+Actual pinned Torch custom-op schemas and fake single/joint output shapes were checked on the CPU preparation notebook; the 20 CPU parameter tests passed using actual imported source with no dependency stubs. The CUDA reference provider is not executed by these CPU checks. Changed-file pre-commit checks passed. The same six common patch files are identical in all six prepared branches; 15 pairwise merges and 30 ordered first-squash simulations are clean. These records are in `production_validation/`; the four-model GPU job remains the pending gate before pushing the production patch.

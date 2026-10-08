@@ -1,0 +1,12 @@
+/inspire/ssd/project/video-generation/public/huangyuwei/experiments/omni-bitwise-20261008/production-schema/vllm_omni/__init__.py:22: RuntimeWarning: Failed to import version from _version.py: No module named 'vllm_omni._version'
+This typically happens in development mode before building.
+Using fallback version 'dev'.
+  from .version import __version__, __version_tuple__  # isort:skip # noqa: F401
+INFO 10-08 07:57:58 [importing.py:74] Triton is installed but 0 active driver(s) found (expected 1). Disabling Triton to prevent runtime errors.
+INFO 10-08 07:57:58 [importing.py:98] Triton not installed or not compatible; certain GPU-related functions will not be available.
+WARNING 10-08 07:58:01 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+WARNING 10-08 07:58:02 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+WARNING 10-08 07:58:02 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+INFO 10-08 07:58:07 [patch.py:332] NVFP4 W4A4 weight_scale NaN-clamp: installed.
+INFO 10-08 07:58:07 [patch.py:583] inductor factorable-divisibility patch: installed.
+{"status": "CPU_SCHEMA_AND_FAKE_SHAPES_PASS", "torch": "2.13.0+cu130", "module": "/inspire/ssd/project/video-generation/public/huangyuwei/experiments/omni-bitwise-20261008/production-schema/vllm_omni/diffusion/layers/fused_qk_norm_rope.py", "single": "vllm_omni::fused_qk_norm_rope(Tensor q, Tensor k, Tensor q_weight, Tensor k_weight, Tensor rope_table, float eps, SymInt head_dim, SymInt rotary_dim, bool interleaved, str rms_norm_reduction=\"triton\", bool enable_fp_fusion=True) -> (Tensor, Tensor)", "joint": "vllm_omni::fused_joint_qkv_norm_rope(Tensor q0, Tensor k0, Tensor v0, Tensor q1, Tensor k1, Tensor v1, Tensor q0_weight, Tensor k0_weight, Tensor q1_weight, Tensor k1_weight, Tensor rope_table, float eps, SymInt head_dim, SymInt rotary_dim, bool interleaved, str rms_norm_reduction=\"triton\", bool enable_fp_fusion=True) -> (Tensor, Tensor, Tensor)"}

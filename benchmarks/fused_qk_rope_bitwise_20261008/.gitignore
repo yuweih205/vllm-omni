@@ -8,3 +8,4 @@
 !recovered-qwen/*.tgz
 !recovered-zimage/*.json
 !recovered-zimage/*.tgz
+!production_validation/*.log

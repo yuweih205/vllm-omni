@@ -1,0 +1,25 @@
+{
+  "status": "CPU_SCHEMA_AND_FAKE_SHAPES_PASS",
+  "cpu_settings_contract_tests": {
+    "passed": 20,
+    "failed": 0,
+    "elapsed_seconds": 19.44,
+    "dependency_stubs": false
+  },
+  "runtime": {
+    "python": "3.12.12",
+    "torch": "2.13.0+cu130",
+    "vllm": "0.29.0",
+    "cuda": "13.0"
+  },
+  "scope": "Actual pinned Torch custom-op registration and fake single/joint shapes, plus CPU parameter resolution/validation. No CUDA kernel or model execution.",
+  "operator_sha256": "0ebacf9d83d89a08419e92db9cdf5ffdbba3f37222a32a104db0b1bc29ad91b4",
+  "pre_commit_changed_files": "PASS",
+  "independent_merge_checks": {
+    "pairs": 15,
+    "ordered_first_squash": 30,
+    "all_clean": true
+  },
+  "gpu_model_job": "hyw-omni-bitwise-model-1008-r3",
+  "gpu_model_status": "job_queuing"
+}

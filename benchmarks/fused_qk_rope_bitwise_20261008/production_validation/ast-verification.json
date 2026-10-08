@@ -1,0 +1,17 @@
+{
+  "kernel_ast_equal_to_measured_parameterized_module": [
+    "_norm_rope_tile",
+    "_qk_norm_rope_kernel",
+    "_joint_qkv_norm_rope_kernel"
+  ],
+  "launch_ast_equal_to_measured_parameterized_module": [
+    "_launch_fused_qk_norm_rope",
+    "_launch_fused_joint_qkv_norm_rope"
+  ],
+  "default_kernel_ast_restores_original": [
+    "_norm_rope_tile",
+    "_qk_norm_rope_kernel",
+    "_joint_qkv_norm_rope_kernel"
+  ],
+  "operator_sha256": "0ebacf9d83d89a08419e92db9cdf5ffdbba3f37222a32a104db0b1bc29ad91b4"
+}
