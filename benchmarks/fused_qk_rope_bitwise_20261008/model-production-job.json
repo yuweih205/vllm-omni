@@ -1,0 +1,21 @@
+{
+  "job": "hyw-omni-bitwise-model-1008-r3",
+  "same_submission": true,
+  "workspace": "CI-情境智能",
+  "partition": "MOVA2.0纯交付分区",
+  "gpus": 8,
+  "max_runtime_hours": 1,
+  "mode": "production environment preset; source operator calls only counted, not replaced",
+  "source_heads": {
+    "7560": "032950ed9533ae3565046defb2bf4d2f859938f9",
+    "7595": "6b40588161000b4942abe6e6d062a80d42228831",
+    "7596": "cce0fdfd9a3d810be67cda07eff537ef11cb99c5",
+    "7600": "53b1d8da4cf07fc40f55613a381f7b401873bbea"
+  },
+  "script_sha256": "1d4eaff2c5de50b0c09a098adfab736bd936dba1c01653f870bd7dbb4b3efed9",
+  "runner_sha256": "d97a75ebe53c35d038c183c2f4e2b591db50ceb9dbd9ccad69493c4a561dc8a3",
+  "launcher_sha256": "4e6ff8448935edb96d83fbc265533a2ca51c5a07c6e1ec4a065668dc489c5b5c",
+  "original_isolated_harness_retained": true,
+  "status": "job_queuing after atomic launcher switch; original and production source snapshots remain separate",
+  "launcher_switch_confirmed_utc": "2026-10-08T08:27:03Z"
+}
