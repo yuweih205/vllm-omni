@@ -1,0 +1,111 @@
+{
+  "archive": "qwen_overlay.tgz",
+  "commit": "f3afda8aa8b841e2d72a842dea534d63fc65555a",
+  "entries": [
+    {
+      "path": "tests/diffusion/models/qwen_image/test_qwen_image_edit_plus.py",
+      "sha256": "d0c3ad6c05e400cb27e3ce2b9908d0ac8daff3395f9c67d5ad54a7aad916daaa",
+      "matches_commit": true
+    },
+    {
+      "path": "tests/diffusion/models/qwen_image/test_qwen_image_fused_qk_norm_rope.py",
+      "sha256": "7649562318d455572b762615df9693b8fe47c2360517e02c075e02302570aa35",
+      "matches_commit": true
+    },
+    {
+      "path": "tests/diffusion/models/qwen_image/test_qwen_image_max_sequence_length.py",
+      "sha256": "a06ad9a95d97ba8ef8172f6ff20d2b74c3830845cab310034b00168a00ca0387",
+      "matches_commit": true
+    },
+    {
+      "path": "tests/diffusion/models/qwen_image/test_qwen_image_pipelines_txt_seq_lens.py",
+      "sha256": "b93152225eb19adc4e9eac49c7a5432018b463355f314859627c2daf1a8f5311",
+      "matches_commit": true
+    },
+    {
+      "path": "tests/diffusion/models/qwen_image/test_qwen_image_postprocess.py",
+      "sha256": "4fcae837f2971f5e12f3d00484887e21b6c169b4a4a62518423711ed904b41b2",
+      "matches_commit": true
+    },
+    {
+      "path": "tests/diffusion/models/qwen_image/test_qwen_image_rope_utils.py",
+      "sha256": "e2ff3325f0933b60b07cf658701b749d5134aea84290ff66fd1434fde7dc7094",
+      "matches_commit": true
+    },
+    {
+      "path": "tests/diffusion/models/qwen_image/test_qwen_image_select01_routing.py",
+      "sha256": "65bad662e599534d3de06fd7b032f9da2be538ef959b0d2dc77c5a3e583d19fa",
+      "matches_commit": true
+    },
+    {
+      "path": "tests/diffusion/models/qwen_image/test_qwen_image_size_utils.py",
+      "sha256": "50ecfa008ceaba8c25b76683544267a3c18bd5fbdaa0c714fbb3d1770696aefb",
+      "matches_commit": true
+    },
+    {
+      "path": "vllm_omni/config/environment_variable_inventory.py",
+      "sha256": "3d552acacbc0631b413c32a8d48457dc580646385f107d00075ca6b45073d494",
+      "matches_commit": true
+    },
+    {
+      "path": "vllm_omni/diffusion/envs.py",
+      "sha256": "a7ff6319317b68e118620692ac21767efabe75442a6aba44200b79f9afc1e74c",
+      "matches_commit": true
+    },
+    {
+      "path": "vllm_omni/diffusion/layers/fused_qk_norm_rope.py",
+      "sha256": "fe01e9d9abd95a0a14465f49090540b8d1c68c0bd033f1676938ab889135401f",
+      "matches_commit": true
+    },
+    {
+      "path": "vllm_omni/diffusion/layers/qwen_select01_modulation.py",
+      "sha256": "fe31eb36366be25eda38b764e140ab7f9e0f07a8f9068114e5be2b6016b02b63",
+      "matches_commit": true
+    },
+    {
+      "path": "vllm_omni/diffusion/models/qwen_image/__init__.py",
+      "sha256": "fd523c4e3a42887fabb7bb72a47652c947bcdfd7bcd5af6734670cffd0a69d73",
+      "matches_commit": true
+    },
+    {
+      "path": "vllm_omni/diffusion/models/qwen_image/autoencoder_kl_qwenimage.py",
+      "sha256": "0479b48531ab539a56342d892657bc84c2fb7d3aa9c25189f167329ebab900db",
+      "matches_commit": true
+    },
+    {
+      "path": "vllm_omni/diffusion/models/qwen_image/cfg_parallel.py",
+      "sha256": "8c5be62c5fb300e93fbb572dfa8b73e2e2b48f147c3abd5f12f87174fd8841ca",
+      "matches_commit": true
+    },
+    {
+      "path": "vllm_omni/diffusion/models/qwen_image/pipeline_qwen_image.py",
+      "sha256": "6902c644b132c1100b83999b5490ee5827f15591822cb9ba66c89f9581842334",
+      "matches_commit": true
+    },
+    {
+      "path": "vllm_omni/diffusion/models/qwen_image/pipeline_qwen_image_edit.py",
+      "sha256": "0d2907911437a6f1b6634943215c526c655cc62c0c64e56e2182ec0d9c84770c",
+      "matches_commit": true
+    },
+    {
+      "path": "vllm_omni/diffusion/models/qwen_image/pipeline_qwen_image_edit_plus.py",
+      "sha256": "3aaa92de647c97f74f0bdefb88f9d2f1944a6dcbfbed7f199dda82874cf760d7",
+      "matches_commit": true
+    },
+    {
+      "path": "vllm_omni/diffusion/models/qwen_image/pipeline_qwen_image_layered.py",
+      "sha256": "ccec82a1a04f892c52132a52a0495657e689ea9e76ce538d7ffa7d5545efad8f",
+      "matches_commit": true
+    },
+    {
+      "path": "vllm_omni/diffusion/models/qwen_image/qwen_image_transformer.py",
+      "sha256": "a241c47da300b951e42a2c5ffa49cafd96aaab895fb125fbcbd6b564e75591b0",
+      "matches_commit": true
+    },
+    {
+      "path": "vllm_omni/diffusion/models/qwen_image/rope_utils.py",
+      "sha256": "6dffcf43301fa2fef82d6f108876ade0afe52f234f2d00d1db9ee736dd141510",
+      "matches_commit": true
+    }
+  ]
+}

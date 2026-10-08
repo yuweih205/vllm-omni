@@ -1,0 +1,13 @@
+{
+  "job": "hyw-omni-bitwise-model-1008-r3",
+  "workspace": "CI-情境智能",
+  "project": "CI-扩散音视频生成",
+  "partition": "MOVA2.0纯交付分区",
+  "gpu_count": 8,
+  "gpu": "NVIDIA H200 (141GB)",
+  "image": "docker.sii.shaipower.online/inspire-studio/cuda:13.0.2-cudnn-devel-ubuntu22.04",
+  "quota": "8,64,960",
+  "max_hours": 1,
+  "status_at_submission": "QUEUING",
+  "previous_model_job": "r2 stopped before allocation to correct reference-provider assertion; no model measurement was produced"
+}

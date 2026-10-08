@@ -1,0 +1,61 @@
+{
+  "base_commit": "ff6e906a25de1ca3122c0d0d5250fde5a0ddbc7b",
+  "base_archive_sha256": "443a1ac479059b5bfd682a79ba047f7b1ce39bf68634656d7acb32d9593f3237",
+  "runtime_metadata": {
+    "python_series": "3.12",
+    "vllm": "0.28.0",
+    "torch": "2.13.0+cu130",
+    "triton": "3.7.1",
+    "diffusers": "0.40.0",
+    "python": "3.12.3",
+    "torch_cuda": "13.0"
+  },
+  "recovery_date": "2026-10-08",
+  "measurement_date": "2026-09-17",
+  "new_measurement": false,
+  "comparison_method": "torch.equal after BF16 output is converted to float32; no integer-view signed-zero audit was recorded",
+  "source_commit": "f3afda8aa8b841e2d72a842dea534d63fc65555a",
+  "compatibility_overlay": "all21 overlay files byte-identical to source_commit",
+  "constructor": "QwenImageTransformer2DModel(OmniDiffusionConfig(model=\"test\",dtype=torch.bfloat16),num_layers=60); remaining constructor defaults",
+  "model_seed": 0,
+  "generator_seed": 1,
+  "parameter_init": "one sequential CUDA generator; 1D norm weights = 1+.05randn; other1D=.01randn; matrices=.02randn in FP32 cast to BF16; inputs continue same generator",
+  "input_shapes": {
+    "hidden": [
+      "B",
+      "img",
+      64
+    ],
+    "encoder": [
+      "B",
+      512,
+      3584
+    ],
+    "mask": [
+      "B",
+      512
+    ],
+    "t": [
+      "B"
+    ]
+  },
+  "compiled": false,
+  "gate_values": {
+    "historical_per_stream_fused": "1000000000",
+    "joint_fused": "0"
+  },
+  "truth_gate": {
+    "historical_per_stream": {
+      "joint": 0,
+      "single": 120
+    },
+    "joint": {
+      "joint": 60,
+      "single": 0
+    }
+  },
+  "output_comparison_scope": "full returned transformer tensor",
+  "original_job": "hyw-qwen-joint-r4",
+  "harness_provenance_caveat": "surviving script includes optional --compile added after eager measurement; retained eager reports lack compiled field. Current retained script hash is not a contemporaneously recorded original-run hash.",
+  "runtime_metadata_source": "retained venv pyvenv.cfg, static torch/version.py and distribution METADATA; packages were not imported or executed"
+}

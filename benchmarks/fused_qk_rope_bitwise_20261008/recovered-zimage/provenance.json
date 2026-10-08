@@ -1,0 +1,67 @@
+{
+  "base_commit": "ff6e906a25de1ca3122c0d0d5250fde5a0ddbc7b",
+  "base_archive_sha256": "443a1ac479059b5bfd682a79ba047f7b1ce39bf68634656d7acb32d9593f3237",
+  "runtime_metadata": {
+    "python_series": "3.12",
+    "vllm": "0.28.0",
+    "torch": "2.13.0+cu130",
+    "triton": "3.7.1",
+    "diffusers": "0.40.0",
+    "python": "3.12.3",
+    "torch_cuda": "13.0"
+  },
+  "recovery_date": "2026-10-08",
+  "measurement_date": "2026-09-17",
+  "new_measurement": false,
+  "comparison_method": "torch.equal after BF16 output is converted to float32; no integer-view signed-zero audit was recorded",
+  "source_commit": "6dc3f91353a2f879c5a0981788f148b29a252ced",
+  "compatibility_overlay": "environment_variable_inventory.py removes VLLM_OMNI_ABORT_TIMEOUT and VLLM_OMNI_BREEZE_GOLDEN_DIR from source_commit; other seven files byte-identical",
+  "model_seed": 42,
+  "parameter_init": "sorted named_parameters; each parameter normal_(0,.02) with NEW CUDA generator seed7",
+  "input_seed": 123,
+  "dtype": "bfloat16",
+  "batch": 2,
+  "output_comparison_scope": "first image tensor only, after complete tiny-model forward",
+  "attention_backend": "TORCH_SDPA",
+  "compiled": false,
+  "constructor": {
+    "all_patch_size": [
+      2
+    ],
+    "all_f_patch_size": [
+      1
+    ],
+    "in_channels": 16,
+    "dim": 512,
+    "n_layers": 2,
+    "n_refiner_layers": 1,
+    "n_heads": 4,
+    "n_kv_heads": 4,
+    "cap_feat_dim": 64
+  },
+  "input_shapes": {
+    "x_each": [
+      16,
+      1,
+      16,
+      16
+    ],
+    "cap_each": [
+      32,
+      64
+    ],
+    "t": [
+      2
+    ]
+  },
+  "gate_values": {
+    "original_eager": "1000000000",
+    "current_fused": "0"
+  },
+  "truth_gate": {
+    "eager_calls": 0,
+    "fused_calls": 4
+  },
+  "original_job": "hyw-zimage-sp-sweep2",
+  "runtime_metadata_source": "retained venv pyvenv.cfg, static torch/version.py and distribution METADATA; packages were not imported or executed"
+}

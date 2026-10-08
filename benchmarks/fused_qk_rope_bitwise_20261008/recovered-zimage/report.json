@@ -1,0 +1,189 @@
+{
+  "sp1_rank0": {
+    "fused_vs_eager_rel_l2": 0.0,
+    "fused_vs_eager_bitwise": true,
+    "fused_vs_eager_max_abs": 0.0,
+    "fused_op_calls": 4,
+    "eager_us": 6647.759914398193,
+    "fused_us": 6167.151927947998,
+    "saving_pct": 7.229623100696826,
+    "eager_vs_sp1_eager_rel_l2": 0.0,
+    "fused_vs_sp1_fused_rel_l2": 0.0
+  },
+  "sp2_rank0": {
+    "fused_vs_eager_rel_l2": 0.0,
+    "fused_vs_eager_bitwise": true,
+    "fused_vs_eager_max_abs": 0.0,
+    "fused_op_calls": 4,
+    "eager_us": 7154.800176620483,
+    "fused_us": 6613.600015640259,
+    "saving_pct": 7.564154799859924,
+    "eager_vs_sp1_eager_rel_l2": 0.004646282005149976,
+    "fused_vs_sp1_fused_rel_l2": 0.004646282005149976
+  },
+  "sp2_rank1": {
+    "fused_vs_eager_rel_l2": 0.0,
+    "fused_vs_eager_bitwise": true,
+    "fused_vs_eager_max_abs": 0.0,
+    "fused_op_calls": 4,
+    "eager_us": 7151.551961898804,
+    "fused_us": 6604.304075241089,
+    "saving_pct": 7.65215563801085,
+    "eager_vs_sp1_eager_rel_l2": 0.004646282005149976,
+    "fused_vs_sp1_fused_rel_l2": 0.004646282005149976
+  },
+  "sp4_rank0": {
+    "fused_vs_eager_rel_l2": 0.0,
+    "fused_vs_eager_bitwise": true,
+    "fused_vs_eager_max_abs": 0.0,
+    "fused_op_calls": 4,
+    "eager_us": 7176.448106765747,
+    "fused_us": 6601.104021072388,
+    "saving_pct": 8.017114833603292,
+    "eager_vs_sp1_eager_rel_l2": 0.00469773271221972,
+    "fused_vs_sp1_fused_rel_l2": 0.00469773271221972
+  },
+  "sp4_rank1": {
+    "fused_vs_eager_rel_l2": 0.0,
+    "fused_vs_eager_bitwise": true,
+    "fused_vs_eager_max_abs": 0.0,
+    "fused_op_calls": 4,
+    "eager_us": 7175.77600479126,
+    "fused_us": 6626.031875610352,
+    "saving_pct": 7.661110503084886,
+    "eager_vs_sp1_eager_rel_l2": 0.00469773271221972,
+    "fused_vs_sp1_fused_rel_l2": 0.00469773271221972
+  },
+  "sp4_rank2": {
+    "fused_vs_eager_rel_l2": 0.0,
+    "fused_vs_eager_bitwise": true,
+    "fused_vs_eager_max_abs": 0.0,
+    "fused_op_calls": 4,
+    "eager_us": 7151.695966720581,
+    "fused_us": 6586.863994598389,
+    "saving_pct": 7.897874500685699,
+    "eager_vs_sp1_eager_rel_l2": 0.00469773271221972,
+    "fused_vs_sp1_fused_rel_l2": 0.00469773271221972
+  },
+  "sp4_rank3": {
+    "fused_vs_eager_rel_l2": 0.0,
+    "fused_vs_eager_bitwise": true,
+    "fused_vs_eager_max_abs": 0.0,
+    "fused_op_calls": 4,
+    "eager_us": 7175.76003074646,
+    "fused_us": 6600.768089294434,
+    "saving_pct": 8.012976172395954,
+    "eager_vs_sp1_eager_rel_l2": 0.00469773271221972,
+    "fused_vs_sp1_fused_rel_l2": 0.00469773271221972
+  },
+  "sp8_rank0": {
+    "fused_vs_eager_rel_l2": 0.0,
+    "fused_vs_eager_bitwise": true,
+    "fused_vs_eager_max_abs": 0.0,
+    "fused_op_calls": 4,
+    "eager_us": 7213.43994140625,
+    "fused_us": 6700.704097747803,
+    "saving_pct": 7.1080628358082665,
+    "eager_vs_sp1_eager_rel_l2": 0.005336020195760826,
+    "fused_vs_sp1_fused_rel_l2": 0.005336020195760826
+  },
+  "sp8_rank1": {
+    "fused_vs_eager_rel_l2": 0.0,
+    "fused_vs_eager_bitwise": true,
+    "fused_vs_eager_max_abs": 0.0,
+    "fused_op_calls": 4,
+    "eager_us": 7222.383975982666,
+    "fused_us": 6664.911985397339,
+    "saving_pct": 7.71867007402467,
+    "eager_vs_sp1_eager_rel_l2": 0.005336020195760826,
+    "fused_vs_sp1_fused_rel_l2": 0.005336020195760826
+  },
+  "sp8_rank2": {
+    "fused_vs_eager_rel_l2": 0.0,
+    "fused_vs_eager_bitwise": true,
+    "fused_vs_eager_max_abs": 0.0,
+    "fused_op_calls": 4,
+    "eager_us": 7222.384214401245,
+    "fused_us": 6664.83211517334,
+    "saving_pct": 7.719778990934337,
+    "eager_vs_sp1_eager_rel_l2": 0.005336020195760826,
+    "fused_vs_sp1_fused_rel_l2": 0.005336020195760826
+  },
+  "sp8_rank3": {
+    "fused_vs_eager_rel_l2": 0.0,
+    "fused_vs_eager_bitwise": true,
+    "fused_vs_eager_max_abs": 0.0,
+    "fused_op_calls": 4,
+    "eager_us": 7222.6881980896,
+    "fused_us": 6665.119886398315,
+    "saving_pct": 7.719678551799605,
+    "eager_vs_sp1_eager_rel_l2": 0.005336020195760826,
+    "fused_vs_sp1_fused_rel_l2": 0.005336020195760826
+  },
+  "sp8_rank4": {
+    "fused_vs_eager_rel_l2": 0.0,
+    "fused_vs_eager_bitwise": true,
+    "fused_vs_eager_max_abs": 0.0,
+    "fused_op_calls": 4,
+    "eager_us": 7222.288131713867,
+    "fused_us": 6702.383995056152,
+    "saving_pct": 7.198606967434022,
+    "eager_vs_sp1_eager_rel_l2": 0.005336020195760826,
+    "fused_vs_sp1_fused_rel_l2": 0.005336020195760826
+  },
+  "sp8_rank5": {
+    "fused_vs_eager_rel_l2": 0.0,
+    "fused_vs_eager_bitwise": true,
+    "fused_vs_eager_max_abs": 0.0,
+    "fused_op_calls": 4,
+    "eager_us": 7222.448110580444,
+    "fused_us": 6664.559841156006,
+    "saving_pct": 7.72436521360626,
+    "eager_vs_sp1_eager_rel_l2": 0.005336020195760826,
+    "fused_vs_sp1_fused_rel_l2": 0.005336020195760826
+  },
+  "sp8_rank6": {
+    "fused_vs_eager_rel_l2": 0.0,
+    "fused_vs_eager_bitwise": true,
+    "fused_vs_eager_max_abs": 0.0,
+    "fused_op_calls": 4,
+    "eager_us": 7222.2559452056885,
+    "fused_us": 6664.543867111206,
+    "saving_pct": 7.7221311779279365,
+    "eager_vs_sp1_eager_rel_l2": 0.005336020195760826,
+    "fused_vs_sp1_fused_rel_l2": 0.005336020195760826
+  },
+  "sp8_rank7": {
+    "fused_vs_eager_rel_l2": 0.0,
+    "fused_vs_eager_bitwise": true,
+    "fused_vs_eager_max_abs": 0.0,
+    "fused_op_calls": 4,
+    "eager_us": 7213.871955871582,
+    "fused_us": 6634.511947631836,
+    "saving_pct": 8.031193397717407,
+    "eager_vs_sp1_eager_rel_l2": 0.005336020195760826,
+    "fused_vs_sp1_fused_rel_l2": 0.005336020195760826
+  },
+  "sp2-ring_rank0": {
+    "fused_vs_eager_rel_l2": 0.0,
+    "fused_vs_eager_bitwise": true,
+    "fused_vs_eager_max_abs": 0.0,
+    "fused_op_calls": 4,
+    "eager_us": 9263.311862945557,
+    "fused_us": 8776.048183441162,
+    "saving_pct": 5.260145471875044,
+    "eager_vs_sp1_eager_rel_l2": 0.0008536406246863971,
+    "fused_vs_sp1_fused_rel_l2": 0.0008536406246863971
+  },
+  "sp2-ring_rank1": {
+    "fused_vs_eager_rel_l2": 0.0,
+    "fused_vs_eager_bitwise": true,
+    "fused_vs_eager_max_abs": 0.0,
+    "fused_op_calls": 4,
+    "eager_us": 9271.647930145264,
+    "fused_us": 8786.09561920166,
+    "saving_pct": 5.236958031645148,
+    "eager_vs_sp1_eager_rel_l2": 0.0008536406246863971,
+    "fused_vs_sp1_fused_rel_l2": 0.0008536406246863971
+  }
+}

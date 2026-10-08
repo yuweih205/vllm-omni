@@ -1,0 +1,252 @@
+{
+  "profile": "flux2",
+  "shape": [
+    1,
+    512,
+    4096,
+    48,
+    "both",
+    "full"
+  ],
+  "seed": 20261008,
+  "gpu": {
+    "returncode": 0,
+    "physical_device": "0",
+    "gpu": "NVIDIA H200, GPU-36b96bcd-60de-fbdb-8658-94ce40ba7dab, 595.58.03, P0, 1980 MHz, 3201 MHz, 121.02 W, 33, 2 %",
+    "stderr": ""
+  },
+  "visible_gpu": "0",
+  "torch_device": "NVIDIA H200",
+  "versions": {
+    "torch": "2.13.0",
+    "triton": "3.7.1",
+    "vllm": "0.29.0"
+  },
+  "runtime_python": "/inspire/ssd/project/video-generation/public/huangyuwei/experiments/vomni-fusion-i64-20260921-r1/python-v029/cpython-3.12.12-linux-x86_64-gnu/bin/python3.12",
+  "image": "cuda:13.0.2-cudnn-devel-ubuntu22.04",
+  "include_cuda_graph": false,
+  "script_sha256": "291cd3313d443f4755c0df41f44dd52c25ccaea5f8dc331ed81a03a506bf4f47",
+  "current_source_sha256": "34787d3065731491a2992989850b2fa51ff2ad147c86cc1737aaa83d6d65457a",
+  "candidate_source_sha256": "2fefb2156cb8dbe45dc81157b10b27883ac052caccb289a392d018b222c8559d",
+  "epsilon": 1e-06,
+  "norm_implementation": "vllm.model_executor.layers.layernorm.RMSNorm",
+  "norm_forward": "RMSNorm.forward_native",
+  "scope": "Q/K/V preparation only, eager Python model path; no full-model or compiled claim",
+  "paths": {
+    "joint": {
+      "bitwise": {
+        "current_vs_original": {
+          "q": {
+            "bit_mismatches": 67,
+            "elements": 28311552,
+            "max_abs": 0.015625,
+            "finite": true
+          },
+          "k": {
+            "bit_mismatches": 74,
+            "elements": 28311552,
+            "max_abs": 0.015625,
+            "finite": true
+          },
+          "v": {
+            "bit_mismatches": 0,
+            "elements": 28311552,
+            "max_abs": 0.0,
+            "finite": true
+          }
+        },
+        "original_repeat": {
+          "q": {
+            "bit_mismatches": 0,
+            "elements": 28311552,
+            "max_abs": 0.0,
+            "finite": true
+          },
+          "k": {
+            "bit_mismatches": 0,
+            "elements": 28311552,
+            "max_abs": 0.0,
+            "finite": true
+          },
+          "v": {
+            "bit_mismatches": 0,
+            "elements": 28311552,
+            "max_abs": 0.0,
+            "finite": true
+          }
+        },
+        "exact_vs_original": {
+          "q": {
+            "bit_mismatches": 0,
+            "elements": 28311552,
+            "max_abs": 0.0,
+            "finite": true
+          },
+          "k": {
+            "bit_mismatches": 0,
+            "elements": 28311552,
+            "max_abs": 0.0,
+            "finite": true
+          },
+          "v": {
+            "bit_mismatches": 0,
+            "elements": 28311552,
+            "max_abs": 0.0,
+            "finite": true
+          }
+        },
+        "candidate_repeat": {
+          "q": {
+            "bit_mismatches": 0,
+            "elements": 28311552,
+            "max_abs": 0.0,
+            "finite": true
+          },
+          "k": {
+            "bit_mismatches": 0,
+            "elements": 28311552,
+            "max_abs": 0.0,
+            "finite": true
+          },
+          "v": {
+            "bit_mismatches": 0,
+            "elements": 28311552,
+            "max_abs": 0.0,
+            "finite": true
+          }
+        }
+      },
+      "eager": {
+        "original": {
+          "median_ms": 0.5979118537902832,
+          "samples_ms": [
+            0.5977958297729492,
+            0.5979008102416992,
+            0.5979228973388672,
+            0.5979539108276367,
+            0.5976748657226563,
+            0.5988070297241211
+          ]
+        },
+        "current": {
+          "median_ms": 0.11170447826385499,
+          "samples_ms": [
+            0.11371583938598633,
+            0.11120351791381836,
+            0.11108863830566407,
+            0.1113548755645752,
+            0.11205408096313477,
+            0.1453929615020752
+          ]
+        },
+        "exact": {
+          "median_ms": 0.12270527839660644,
+          "samples_ms": [
+            0.1223356819152832,
+            0.1230399990081787,
+            0.12316096305847168,
+            0.12230112075805664,
+            0.12310336112976074,
+            0.12237055778503418
+          ]
+        }
+      }
+    },
+    "single": {
+      "bitwise": {
+        "current_vs_original": {
+          "q": {
+            "bit_mismatches": 94,
+            "elements": 28311552,
+            "max_abs": 0.015625,
+            "finite": true
+          },
+          "k": {
+            "bit_mismatches": 71,
+            "elements": 28311552,
+            "max_abs": 0.03125,
+            "finite": true
+          }
+        },
+        "original_repeat": {
+          "q": {
+            "bit_mismatches": 0,
+            "elements": 28311552,
+            "max_abs": 0.0,
+            "finite": true
+          },
+          "k": {
+            "bit_mismatches": 0,
+            "elements": 28311552,
+            "max_abs": 0.0,
+            "finite": true
+          }
+        },
+        "exact_vs_original": {
+          "q": {
+            "bit_mismatches": 0,
+            "elements": 28311552,
+            "max_abs": 0.0,
+            "finite": true
+          },
+          "k": {
+            "bit_mismatches": 0,
+            "elements": 28311552,
+            "max_abs": 0.0,
+            "finite": true
+          }
+        },
+        "candidate_repeat": {
+          "q": {
+            "bit_mismatches": 0,
+            "elements": 28311552,
+            "max_abs": 0.0,
+            "finite": true
+          },
+          "k": {
+            "bit_mismatches": 0,
+            "elements": 28311552,
+            "max_abs": 0.0,
+            "finite": true
+          }
+        }
+      },
+      "eager": {
+        "original": {
+          "median_ms": 0.36730783462524413,
+          "samples_ms": [
+            0.36733375549316405,
+            0.36733566284179686,
+            0.3672819137573242,
+            0.367457275390625,
+            0.36725086212158203,
+            0.36728126525878907
+          ]
+        },
+        "current": {
+          "median_ms": 0.07590543985366821,
+          "samples_ms": [
+            0.07629824161529541,
+            0.07582687854766845,
+            0.07580031871795655,
+            0.07598400115966797,
+            0.0763158416748047,
+            0.07570208072662353
+          ]
+        },
+        "exact": {
+          "median_ms": 0.101036958694458,
+          "samples_ms": [
+            0.10069855690002441,
+            0.10123680114746093,
+            0.10124575614929199,
+            0.10083711624145508,
+            0.10146016120910645,
+            0.10077088356018066
+          ]
+        }
+      }
+    }
+  },
+  "status": "COMPLETE"
+}

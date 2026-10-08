@@ -1,0 +1,252 @@
+{
+  "profile": "flux1",
+  "shape": [
+    1,
+    512,
+    4096,
+    24,
+    "both",
+    "full"
+  ],
+  "seed": 20261008,
+  "gpu": {
+    "returncode": 0,
+    "physical_device": "1",
+    "gpu": "NVIDIA H200, GPU-c5e7514c-e925-f03e-252b-1570d24a23fe, 595.58.03, P0, 1980 MHz, 3201 MHz, 128.72 W, 39, 0 %",
+    "stderr": ""
+  },
+  "visible_gpu": "1",
+  "torch_device": "NVIDIA H200",
+  "versions": {
+    "torch": "2.13.0",
+    "triton": "3.7.1",
+    "vllm": "0.29.0"
+  },
+  "runtime_python": "/inspire/ssd/project/video-generation/public/huangyuwei/experiments/vomni-fusion-i64-20260921-r1/python-v029/cpython-3.12.12-linux-x86_64-gnu/bin/python3.12",
+  "image": "cuda:13.0.2-cudnn-devel-ubuntu22.04",
+  "include_cuda_graph": false,
+  "script_sha256": "291cd3313d443f4755c0df41f44dd52c25ccaea5f8dc331ed81a03a506bf4f47",
+  "current_source_sha256": "34787d3065731491a2992989850b2fa51ff2ad147c86cc1737aaa83d6d65457a",
+  "candidate_source_sha256": "2fefb2156cb8dbe45dc81157b10b27883ac052caccb289a392d018b222c8559d",
+  "epsilon": 1e-06,
+  "norm_implementation": "vllm.model_executor.layers.layernorm.RMSNorm",
+  "norm_forward": "RMSNorm.forward_native",
+  "scope": "Q/K/V preparation only, eager Python model path; no full-model or compiled claim",
+  "paths": {
+    "joint": {
+      "bitwise": {
+        "current_vs_original": {
+          "q": {
+            "bit_mismatches": 45,
+            "elements": 14155776,
+            "max_abs": 0.015625,
+            "finite": true
+          },
+          "k": {
+            "bit_mismatches": 39,
+            "elements": 14155776,
+            "max_abs": 0.015625,
+            "finite": true
+          },
+          "v": {
+            "bit_mismatches": 0,
+            "elements": 14155776,
+            "max_abs": 0.0,
+            "finite": true
+          }
+        },
+        "original_repeat": {
+          "q": {
+            "bit_mismatches": 0,
+            "elements": 14155776,
+            "max_abs": 0.0,
+            "finite": true
+          },
+          "k": {
+            "bit_mismatches": 0,
+            "elements": 14155776,
+            "max_abs": 0.0,
+            "finite": true
+          },
+          "v": {
+            "bit_mismatches": 0,
+            "elements": 14155776,
+            "max_abs": 0.0,
+            "finite": true
+          }
+        },
+        "exact_vs_original": {
+          "q": {
+            "bit_mismatches": 0,
+            "elements": 14155776,
+            "max_abs": 0.0,
+            "finite": true
+          },
+          "k": {
+            "bit_mismatches": 0,
+            "elements": 14155776,
+            "max_abs": 0.0,
+            "finite": true
+          },
+          "v": {
+            "bit_mismatches": 0,
+            "elements": 14155776,
+            "max_abs": 0.0,
+            "finite": true
+          }
+        },
+        "candidate_repeat": {
+          "q": {
+            "bit_mismatches": 0,
+            "elements": 14155776,
+            "max_abs": 0.0,
+            "finite": true
+          },
+          "k": {
+            "bit_mismatches": 0,
+            "elements": 14155776,
+            "max_abs": 0.0,
+            "finite": true
+          },
+          "v": {
+            "bit_mismatches": 0,
+            "elements": 14155776,
+            "max_abs": 0.0,
+            "finite": true
+          }
+        }
+      },
+      "eager": {
+        "original": {
+          "median_ms": 0.3177639961242676,
+          "samples_ms": [
+            0.3177542304992676,
+            0.3177737617492676,
+            0.3179612731933594,
+            0.3176665687561035,
+            0.3176643180847168,
+            0.31804800033569336
+          ]
+        },
+        "current": {
+          "median_ms": 0.10698272228240967,
+          "samples_ms": [
+            0.10840288162231446,
+            0.10766912460327148,
+            0.10615967750549317,
+            0.10604928016662597,
+            0.1077187156677246,
+            0.10629631996154786
+          ]
+        },
+        "exact": {
+          "median_ms": 0.10740464210510253,
+          "samples_ms": [
+            0.10776032447814941,
+            0.10941727638244629,
+            0.10751680374145507,
+            0.10610560417175292,
+            0.10729248046875,
+            0.10637151718139648
+          ]
+        }
+      }
+    },
+    "single": {
+      "bitwise": {
+        "current_vs_original": {
+          "q": {
+            "bit_mismatches": 60,
+            "elements": 14155776,
+            "max_abs": 0.015625,
+            "finite": true
+          },
+          "k": {
+            "bit_mismatches": 30,
+            "elements": 14155776,
+            "max_abs": 0.015625,
+            "finite": true
+          }
+        },
+        "original_repeat": {
+          "q": {
+            "bit_mismatches": 0,
+            "elements": 14155776,
+            "max_abs": 0.0,
+            "finite": true
+          },
+          "k": {
+            "bit_mismatches": 0,
+            "elements": 14155776,
+            "max_abs": 0.0,
+            "finite": true
+          }
+        },
+        "exact_vs_original": {
+          "q": {
+            "bit_mismatches": 0,
+            "elements": 14155776,
+            "max_abs": 0.0,
+            "finite": true
+          },
+          "k": {
+            "bit_mismatches": 0,
+            "elements": 14155776,
+            "max_abs": 0.0,
+            "finite": true
+          }
+        },
+        "candidate_repeat": {
+          "q": {
+            "bit_mismatches": 0,
+            "elements": 14155776,
+            "max_abs": 0.0,
+            "finite": true
+          },
+          "k": {
+            "bit_mismatches": 0,
+            "elements": 14155776,
+            "max_abs": 0.0,
+            "finite": true
+          }
+        }
+      },
+      "eager": {
+        "original": {
+          "median_ms": 0.19452655792236329,
+          "samples_ms": [
+            0.19415584564208985,
+            0.1948524856567383,
+            0.1942838478088379,
+            0.19503904342651368,
+            0.1944326400756836,
+            0.19462047576904296
+          ]
+        },
+        "current": {
+          "median_ms": 0.0667745590209961,
+          "samples_ms": [
+            0.06752607822418213,
+            0.06573215961456298,
+            0.06552288055419922,
+            0.08199551582336426,
+            0.06733183860778809,
+            0.06621727943420411
+          ]
+        },
+        "exact": {
+          "median_ms": 0.06739583969116211,
+          "samples_ms": [
+            0.06687520027160644,
+            0.06768127918243408,
+            0.07263360023498536,
+            0.06705471992492676,
+            0.06830783843994141,
+            0.06711040019989013
+          ]
+        }
+      }
+    }
+  },
+  "status": "COMPLETE"
+}

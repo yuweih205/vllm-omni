@@ -1,0 +1,24 @@
+{
+  "layers": 60,
+  "batch": 2,
+  "txt": 512,
+  "img": 4096,
+  "timing_ms": {
+    "per_stream": 324.8147888183594,
+    "joint": 314.62217712402344,
+    "saving_pct": 3.1379764854351437
+  },
+  "joint_vs_per_stream_rel_l2": 0.0,
+  "bitwise": true,
+  "counts": {
+    "per_stream": {
+      "joint": 0,
+      "single": 120
+    },
+    "joint": {
+      "joint": 60,
+      "single": 0
+    }
+  },
+  "peak_gib": 76.18268394470215
+}

@@ -1,0 +1,46 @@
+{
+  "archive": "zimage_overlay.tgz",
+  "commit": "6dc3f91353a2f879c5a0981788f148b29a252ced",
+  "entries": [
+    {
+      "path": "tests/diffusion/models/z_image/test_z_image_fused_qk_norm_rope.py",
+      "sha256": "5dc54c91c4e30278621cfd063748194e8e5e2d584ab030c0cb4fc499662a8f5c",
+      "matches_commit": true
+    },
+    {
+      "path": "tests/diffusion/models/z_image/test_zimage_tp_constraints.py",
+      "sha256": "c2317452235209a9f3688bc1f1348c544a6c576f07132aab9c48fa91462fc44e",
+      "matches_commit": true
+    },
+    {
+      "path": "vllm_omni/config/environment_variable_inventory.py",
+      "sha256": "743144064fb7132cde99cdaa1526ec9b9bb9bbf8e37462d81ae2de276ef3fa16",
+      "matches_commit": false
+    },
+    {
+      "path": "vllm_omni/diffusion/envs.py",
+      "sha256": "a7ff6319317b68e118620692ac21767efabe75442a6aba44200b79f9afc1e74c",
+      "matches_commit": true
+    },
+    {
+      "path": "vllm_omni/diffusion/layers/fused_qk_norm_rope.py",
+      "sha256": "fe01e9d9abd95a0a14465f49090540b8d1c68c0bd033f1676938ab889135401f",
+      "matches_commit": true
+    },
+    {
+      "path": "vllm_omni/diffusion/models/z_image/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "matches_commit": true
+    },
+    {
+      "path": "vllm_omni/diffusion/models/z_image/pipeline_z_image.py",
+      "sha256": "31b7886df41e1e1964caad52c1b88411680bf369a975b152db485960d819e9e4",
+      "matches_commit": true
+    },
+    {
+      "path": "vllm_omni/diffusion/models/z_image/z_image_transformer.py",
+      "sha256": "34523bd1a4ec781fc04cb42af19b1f712abd9b5d9a967faa10245f42718df0b3",
+      "matches_commit": true
+    }
+  ]
+}

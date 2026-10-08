@@ -1,0 +1,10 @@
+!*.json
+!*.tgz
+!operator_results/
+!operator_results/*.json
+!source_manifests/
+!source_manifests/*.json
+!recovered-qwen/*.json
+!recovered-qwen/*.tgz
+!recovered-zimage/*.json
+!recovered-zimage/*.tgz
