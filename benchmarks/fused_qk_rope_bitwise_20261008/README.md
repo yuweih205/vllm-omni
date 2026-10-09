@@ -69,19 +69,154 @@ Switching the token threshold from `1000000000` to `0` changes the fused-call co
 
 See `recovered-zimage/REPRODUCTION.md` for the exact historical-source/runtime recipe. Both recovered historical harnesses compare BF16 outputs after conversion to FP32 using `torch.equal`; integer-view signed-zero checks were not recorded in those historical runs.
 
-## Four pending full shallow-model checks
+## Completed production eager model measurements
 
-`model_production_bitwise.py` compares original/current/reference-mode outputs using the prepared production source and its actual environment preset. Counter wrappers forward calls unchanged; no experimental operator is substituted. It compares outputs from the same initialized model and inputs, checks raw output bytes and actual fused-call counts, includes model RoPE generation and per-forward packing, and measures eager ABBA latency. The four profiles are Flux.2, FLUX.1, HunyuanVideo-1.5 and Ovis-Image; Qwen and Z-Image use the retained evidence above.
+The six B1/B2 cases for Flux.2, FLUX.1 and Ovis-Image use `model_production_bitwise.py` with the prepared production source and its actual environment preset. The normal model functions are wrapped only for counting. All six CUDA-reference cases match every returned tensor's raw bytes, repeat exactly, and match again after timing. The fast arm repeats but has nonzero byte differences against the original chain.
 
-Prepared production revisions: #7560 `032950ed9533ae3565046defb2bf4d2f859938f9`, #7595 `6b40588161000b4942abe6e6d062a80d42228831`, #7596 `cce0fdfd9a3d810be67cda07eff537ef11cb99c5`, #7600 `53b1d8da4cf07fc40f55613a381f7b401873bbea`. Models retain actual head widths/head dimension 128 and use two dual and two single blocks, or two Hunyuan blocks plus one text-refiner layer. Inputs use 64 text tokens and a 16×16 image/video grid, B1/B2, seed `20261008`, world/TP/SP size 1, eager execution.
+The comparison holds the initialized model, state and inputs fixed, includes model RoPE generation and per-forward table packing, and checks `0 joint + 0 single` calls in the original versus `2 joint + 2 single` in either fused arm. Recorded original providers are `vllm_c` RMSNorm and `vllm_flash_attn` RoPE, with FLASH_ATTN attention.
 
-The H200 eight-GPU job `hyw-omni-bitwise-model-1008-r3` is queued in MOVA2.0纯交付分区. This section records a prepared experiment and supplies no full-model performance claim yet.
+| Model | Batch | Original for bitwise pair (ms) | Current fast (ms) | Bitwise (ms) | Bitwise saving vs original | Bitwise extra latency vs current |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| Flux.2 | B1 | 5.407557 | 4.783005 | 4.851823 | 10.28% | 1.44% |
+| Flux.2 | B2 | 5.974448 | 5.634958 | 5.708642 | 4.45% | 1.31% |
+| FLUX.1 | B1 | 4.902914 | 4.339882 | 4.393066 | 10.40% | 1.23% |
+| FLUX.1 | B2 | 5.158642 | 4.580354 | 4.642147 | 10.01% | 1.35% |
+| Ovis-Image | B1 | 4.860845 | 4.271122 | 4.331773 | 10.88% | 1.42% |
+| Ovis-Image | B2 | 5.147882 | 4.538938 | 4.599460 | 10.65% | 1.33% |
 
-`run_production_models.sh` contains the eight-worker profile map and full commands. `production_source_manifests/` retains the exact source hashes; the prepared common patch reconstructs the snapshots from the unchanged model revisions. The queued job launcher was atomically switched to `run_models.production.sh` while the job remained queued; it uses the same submission and resources. The earlier isolated proposal (`model_bitwise.py`, `run_models.sh`, `source_manifests/`) is retained for provenance and was not run on GPUs. For another host, replace only the repository/output/runtime paths; keep source revisions, model/input settings and numerical controls fixed.
+These are full shallow random-init transformer forward times: two dual plus two single blocks, 64 text tokens and 256 image tokens (16×16 grid), actual head widths/head dimension 128, BF16, eager, world/TP/SP size 1, seed 20261008. Each pair uses CUDA-event ABBA, 20 warmups, 20 calls/sample, three rounds, medians of six samples per arm. Original/current and original/bitwise are separate pairs; the table's baseline and saving come from the bitwise pair. The extra-latency ratio describes the separately measured optimized medians. The measured bitwise medians cost about 1.2%–1.4% more than the fast medians, while retaining a 4.45%–10.88% saving versus the original chain. These figures supplement the original PR performance tables.
+
+`model_results_r3/` contains six unchanged raw records and the validation summary. The measured script SHA256 is `1d4eaff2c5de50b0c09a098adfab736bd936dba1c01653f870bd7dbb4b3efed9`; production operator SHA256 is `0ebacf9d83d89a08419e92db9cdf5ffdbba3f37222a32a104db0b1bc29ad91b4`.
+
+### PR #7560 settings and reproduction
+
+The original PR performance results remain unchanged. These additional measurements cover a **full forward of a shallow random-init Flux.2 transformer** with two dual blocks and two single blocks, including model RoPE generation and per-forward table packing.
+
+**Configuration that passed bitwise:** H200; Python 3.12.12, vLLM 0.29.0, Torch 2.13.0 / CUDA 13.0, Triton 3.7.1, Diffusers 0.40.0; eager (`enforce_eager=True`), BF16 activations/norm weights/RoPE, FLASH_ATTN, world/TP/SP size 1, seed `20261008`; B1 and B2, 64 text tokens, 256 image tokens (16×16 grid), 48 heads × 128 dimensions, image channels 128, text feature dimension 15360; guidance 3.5. Matrices use `normal_(0, 0.02)` and Q/K norm weights use `uniform_(0.5, 1.5)`. The baseline Q/K RMSNorm provider is explicitly pinned to `vllm_c` inside the forward context; recorded original RoPE dispatch is `vllm_flash_attn`, with full interleaved RoPE and epsilon `1e-6`.
+
+With the prepared production patch, keep `VLLM_OMNI_FUSED_QK_NORM_ROPE_MIN_TOKENS=0` and change **`VLLM_OMNI_FUSED_QK_NORM_ROPE_NUMERICS=fast` → `vllm_cuda_128`**. This resolves **`rms_norm_reduction="triton"` → `"vllm_cuda_128"` and `enable_fp_fusion=True` → `False`**. Keep `VLLM_BATCH_INVARIANT=0`. The launch stays at four heads/program, one warp and two stages.
+
+| Arm | `MIN_TOKENS` | `NUMERICS` |
+| --- | ---: | --- |
+| Original Q/K norm + RoPE chain | 1000000000000 | `fast` |
+| Current fast fusion | 0 | `fast` |
+| Eager bitwise fusion | 0 | `vllm_cuda_128` |
+
+Both B1/B2 have **zero output-byte mismatches, zero maximum absolute error and finite outputs** versus the original chain. All three arms repeat exactly; the bitwise check also passes after timing. Observed fused calls per forward are original `0 joint + 0 single`, optimized `2 joint + 2 single`. The wrappers only count normal production calls and forward their arguments unchanged.
+
+| Batch | Original for bitwise pair (ms) | Current fast fusion (ms) | Bitwise fusion (ms) | Bitwise latency saving vs original | Bitwise extra latency vs current |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| B1 | 5.407557 | 4.783005 | 4.851823 | 10.28% | 1.44% |
+| B2 | 5.974448 | 5.634958 | 5.708642 | 4.45% | 1.31% |
+
+**The measured bitwise medians are slower than the current fast-fusion medians.** Each original/optimized pair uses eager CUDA-event ABBA ordering, 20 warmup calls, 20 calls/sample and three rounds (six samples per arm). The original column and saving use the original/bitwise pair; current fast fusion was measured in a separate original/current pair. Extra latency is the descriptive ratio of those two optimized medians. These timings apply to the shallow configuration above; the earlier PR performance tables retain their own model/input settings.
+
+**Measured source:** prepared revision `032950ed9533ae3565046defb2bf4d2f859938f9`, reconstructed as current PR `e0afca0bc5fc458694bd28f2101cb5fb49c16fa7` plus the [common numerical-preset patch](./production_validation/shared-numerics.patch). **That patch has not yet been pushed to this PR**, so reproduction currently requires applying it. The production operator SHA256 is `0ebacf9d83d89a08419e92db9cdf5ffdbba3f37222a32a104db0b1bc29ad91b4`; the [harness](./model_production_bitwise.py) SHA256 is `1d4eaff2c5de50b0c09a098adfab736bd936dba1c01653f870bd7dbb4b3efed9`. It verifies the entire pinned Python-source manifest before executing.
+
+Reproduce with the pinned runtime, a fresh checkout at the stated current PR revision, and downloaded artifacts:
+
+```bash
+git -C "$SOURCE" apply "$ARTIFACTS/production_validation/shared-numerics.patch"
+cp "$ARTIFACTS/production_source_manifests/pr7560/source_info.json" "$SOURCE/source_info.json"
+export PYTHONPATH="$SOURCE:$ARTIFACTS"
+export VLLM_BATCH_INVARIANT=0
+# Run once with --batch-size 1, then with 2, using a fresh output for each.
+CUDA_VISIBLE_DEVICES=0 "$PYTHON" "$ARTIFACTS/model_production_bitwise.py" \
+  --profile flux2 --source "$SOURCE" \
+  --expected-commit 032950ed9533ae3565046defb2bf4d2f859938f9 \
+  --seed 20261008 --batch-size 1 --text-tokens 64 --image-side 16 \
+  --warmup 20 --iterations 20 --rounds 3 --output "$OUTPUT/flux2_b1.json"
+```
+
+`SOURCE` and `OUTPUT` use the documented personal Inspire output root; paths can be adapted as described in the artifact README. The harness sets all three arms' environment presets and reference-provider priority internally. [B1 raw results](./model_results_r3/flux2_b1.json), [B2 raw results](./model_results_r3/flux2_b2.json) include individual timing samples, dispatch providers, source hashes, state/input fingerprints and all bitwise checks.
+
+### PR #7595 settings and reproduction
+
+The original PR performance results remain unchanged. These additional measurements cover a **full forward of a shallow random-init FLUX.1 transformer** with two dual blocks and two single blocks, including model RoPE generation and per-forward table packing.
+
+**Configuration that passed bitwise:** H200; Python 3.12.12, vLLM 0.29.0, Torch 2.13.0 / CUDA 13.0, Triton 3.7.1, Diffusers 0.40.0; eager (`enforce_eager=True`), BF16 activations/norm weights/RoPE, FLASH_ATTN, world/TP/SP size 1, seed `20261008`; B1 and B2, 64 text tokens, 256 image tokens (16×16 grid), 24 heads × 128 dimensions, image channels 64, text feature dimension 4096; pooled projection dimension 768; guidance 3.5. Matrices use `normal_(0, 0.02)` and Q/K norm weights use `uniform_(0.5, 1.5)`. The baseline Q/K RMSNorm provider is explicitly pinned to `vllm_c` inside the forward context; recorded original RoPE dispatch is `vllm_flash_attn`, with full interleaved RoPE and epsilon `1e-6`.
+
+With the prepared production patch, keep `VLLM_OMNI_FUSED_QK_NORM_ROPE_MIN_TOKENS=0` and change **`VLLM_OMNI_FUSED_QK_NORM_ROPE_NUMERICS=fast` → `vllm_cuda_128`**. This resolves **`rms_norm_reduction="triton"` → `"vllm_cuda_128"` and `enable_fp_fusion=True` → `False`**. Keep `VLLM_BATCH_INVARIANT=0`. The launch stays at four heads/program, one warp and two stages.
+
+| Arm | `MIN_TOKENS` | `NUMERICS` |
+| --- | ---: | --- |
+| Original Q/K norm + RoPE chain | 1000000000000 | `fast` |
+| Current fast fusion | 0 | `fast` |
+| Eager bitwise fusion | 0 | `vllm_cuda_128` |
+
+Both B1/B2 have **zero output-byte mismatches, zero maximum absolute error and finite outputs** versus the original chain. All three arms repeat exactly; the bitwise check also passes after timing. Observed fused calls per forward are original `0 joint + 0 single`, optimized `2 joint + 2 single`. The wrappers only count normal production calls and forward their arguments unchanged.
+
+| Batch | Original for bitwise pair (ms) | Current fast fusion (ms) | Bitwise fusion (ms) | Bitwise latency saving vs original | Bitwise extra latency vs current |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| B1 | 4.902914 | 4.339882 | 4.393066 | 10.40% | 1.23% |
+| B2 | 5.158642 | 4.580354 | 4.642147 | 10.01% | 1.35% |
+
+**The measured bitwise medians are slower than the current fast-fusion medians.** Each original/optimized pair uses eager CUDA-event ABBA ordering, 20 warmup calls, 20 calls/sample and three rounds (six samples per arm). The original column and saving use the original/bitwise pair; current fast fusion was measured in a separate original/current pair. Extra latency is the descriptive ratio of those two optimized medians. These timings apply to the shallow configuration above; the earlier PR performance tables retain their own model/input settings.
+
+**Measured source:** prepared revision `6b40588161000b4942abe6e6d062a80d42228831`, reconstructed as current PR `c97af7759b37c107560a0cf58b31fced5e0a1882` plus the [common numerical-preset patch](./production_validation/shared-numerics.patch). **That patch has not yet been pushed to this PR**, so reproduction currently requires applying it. The production operator SHA256 is `0ebacf9d83d89a08419e92db9cdf5ffdbba3f37222a32a104db0b1bc29ad91b4`; the [harness](./model_production_bitwise.py) SHA256 is `1d4eaff2c5de50b0c09a098adfab736bd936dba1c01653f870bd7dbb4b3efed9`. It verifies the entire pinned Python-source manifest before executing.
+
+Reproduce with the pinned runtime, a fresh checkout at the stated current PR revision, and downloaded artifacts:
+
+```bash
+git -C "$SOURCE" apply "$ARTIFACTS/production_validation/shared-numerics.patch"
+cp "$ARTIFACTS/production_source_manifests/pr7595/source_info.json" "$SOURCE/source_info.json"
+export PYTHONPATH="$SOURCE:$ARTIFACTS"
+export VLLM_BATCH_INVARIANT=0
+# Run once with --batch-size 1, then with 2, using a fresh output for each.
+CUDA_VISIBLE_DEVICES=0 "$PYTHON" "$ARTIFACTS/model_production_bitwise.py" \
+  --profile flux1 --source "$SOURCE" \
+  --expected-commit 6b40588161000b4942abe6e6d062a80d42228831 \
+  --seed 20261008 --batch-size 1 --text-tokens 64 --image-side 16 \
+  --warmup 20 --iterations 20 --rounds 3 --output "$OUTPUT/flux1_b1.json"
+```
+
+`SOURCE` and `OUTPUT` use the documented personal Inspire output root; paths can be adapted as described in the artifact README. The harness sets all three arms' environment presets and reference-provider priority internally. [B1 raw results](./model_results_r3/flux1_b1.json), [B2 raw results](./model_results_r3/flux1_b2.json) include individual timing samples, dispatch providers, source hashes, state/input fingerprints and all bitwise checks.
+
+### PR #7600 settings and reproduction
+
+The original PR performance results remain unchanged. These additional measurements cover a **full forward of a shallow random-init Ovis-Image transformer** with two dual blocks and two single blocks, including model RoPE generation and per-forward table packing.
+
+**Configuration that passed bitwise:** H200; Python 3.12.12, vLLM 0.29.0, Torch 2.13.0 / CUDA 13.0, Triton 3.7.1, Diffusers 0.40.0; eager (`enforce_eager=True`), BF16 activations/norm weights/RoPE, FLASH_ATTN, world/TP/SP size 1, seed `20261008`; B1 and B2, 64 text tokens, 256 image tokens (16×16 grid), 24 heads × 128 dimensions, image channels 64, text feature dimension 2048. Matrices use `normal_(0, 0.02)` and Q/K norm weights use `uniform_(0.5, 1.5)`. The baseline Q/K RMSNorm provider is explicitly pinned to `vllm_c` inside the forward context; recorded original RoPE dispatch is `vllm_flash_attn`, with full interleaved RoPE and epsilon `1e-6`.
+
+With the prepared production patch, keep `VLLM_OMNI_FUSED_QK_NORM_ROPE_MIN_TOKENS=0` and change **`VLLM_OMNI_FUSED_QK_NORM_ROPE_NUMERICS=fast` → `vllm_cuda_128`**. This resolves **`rms_norm_reduction="triton"` → `"vllm_cuda_128"` and `enable_fp_fusion=True` → `False`**. Keep `VLLM_BATCH_INVARIANT=0`. The launch stays at four heads/program, one warp and two stages.
+
+| Arm | `MIN_TOKENS` | `NUMERICS` |
+| --- | ---: | --- |
+| Original Q/K norm + RoPE chain | 1000000000000 | `fast` |
+| Current fast fusion | 0 | `fast` |
+| Eager bitwise fusion | 0 | `vllm_cuda_128` |
+
+Both B1/B2 have **zero output-byte mismatches, zero maximum absolute error and finite outputs** versus the original chain. All three arms repeat exactly; the bitwise check also passes after timing. Observed fused calls per forward are original `0 joint + 0 single`, optimized `2 joint + 2 single`. The wrappers only count normal production calls and forward their arguments unchanged.
+
+| Batch | Original for bitwise pair (ms) | Current fast fusion (ms) | Bitwise fusion (ms) | Bitwise latency saving vs original | Bitwise extra latency vs current |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| B1 | 4.860845 | 4.271122 | 4.331773 | 10.88% | 1.42% |
+| B2 | 5.147882 | 4.538938 | 4.599460 | 10.65% | 1.33% |
+
+**The measured bitwise medians are slower than the current fast-fusion medians.** Each original/optimized pair uses eager CUDA-event ABBA ordering, 20 warmup calls, 20 calls/sample and three rounds (six samples per arm). The original column and saving use the original/bitwise pair; current fast fusion was measured in a separate original/current pair. Extra latency is the descriptive ratio of those two optimized medians. These timings apply to the shallow configuration above; the earlier PR performance tables retain their own model/input settings.
+
+**Measured source:** prepared revision `53b1d8da4cf07fc40f55613a381f7b401873bbea`, reconstructed as current PR `aba7d60a30747bde93894080543a9f6eeb0c2959` plus the [common numerical-preset patch](./production_validation/shared-numerics.patch). **That patch has not yet been pushed to this PR**, so reproduction currently requires applying it. The production operator SHA256 is `0ebacf9d83d89a08419e92db9cdf5ffdbba3f37222a32a104db0b1bc29ad91b4`; the [harness](./model_production_bitwise.py) SHA256 is `1d4eaff2c5de50b0c09a098adfab736bd936dba1c01653f870bd7dbb4b3efed9`. It verifies the entire pinned Python-source manifest before executing.
+
+Reproduce with the pinned runtime, a fresh checkout at the stated current PR revision, and downloaded artifacts:
+
+```bash
+git -C "$SOURCE" apply "$ARTIFACTS/production_validation/shared-numerics.patch"
+cp "$ARTIFACTS/production_source_manifests/pr7600/source_info.json" "$SOURCE/source_info.json"
+export PYTHONPATH="$SOURCE:$ARTIFACTS"
+export VLLM_BATCH_INVARIANT=0
+# Run once with --batch-size 1, then with 2, using a fresh output for each.
+CUDA_VISIBLE_DEVICES=0 "$PYTHON" "$ARTIFACTS/model_production_bitwise.py" \
+  --profile ovis --source "$SOURCE" \
+  --expected-commit 53b1d8da4cf07fc40f55613a381f7b401873bbea \
+  --seed 20261008 --batch-size 1 --text-tokens 64 --image-side 16 \
+  --warmup 20 --iterations 20 --rounds 3 --output "$OUTPUT/ovis_b1.json"
+```
+
+`SOURCE` and `OUTPUT` use the documented personal Inspire output root; paths can be adapted as described in the artifact README. The harness sets all three arms' environment presets and reference-provider priority internally. [B1 raw results](./model_results_r3/ovis_b1.json), [B2 raw results](./model_results_r3/ovis_b2.json) include individual timing samples, dispatch providers, source hashes, state/input fingerprints and all bitwise checks.
 
 
 ## Prepared production preset (not yet pushed to the six PRs)
 
 The common production patch in `production_validation/shared-numerics.patch` adds `VLLM_OMNI_FUSED_QK_NORM_ROPE_NUMERICS=fast|vllm_cuda_128`. Unset/`fast` retains the original arithmetic; `vllm_cuda_128` selects the two reference kwargs above for existing model callers. It does not change other model RMSNorm provider priorities. For the model benchmark, the original reference explicitly selects `ir.ops.rms_norm.set_default(["vllm_c"])` after entering the forward context.
 
-Actual pinned Torch custom-op schemas and fake single/joint output shapes were checked on the CPU preparation notebook; the 20 CPU parameter tests passed using actual imported source with no dependency stubs. The CUDA reference provider is not executed by these CPU checks. Changed-file pre-commit checks passed. The same six common patch files are identical in all six prepared branches; 15 pairwise merges and 30 ordered first-squash simulations are clean. These records are in `production_validation/`; the four-model GPU job remains the pending gate before pushing the production patch.
+Actual pinned Torch custom-op schemas and fake single/joint output shapes were checked on the CPU preparation notebook; the 20 CPU parameter tests passed using actual imported source with no dependency stubs. The CUDA reference provider is not executed by these CPU checks. Changed-file pre-commit checks passed. The same six common patch files are identical in all six prepared branches; 15 pairwise merges and 30 ordered first-squash simulations are clean. These records are in `production_validation/`; The three documented model profiles now have six validated CUDA runs. The common patch is still awaiting push to the six PRs.

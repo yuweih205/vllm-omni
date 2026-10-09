@@ -1,0 +1,838 @@
+{
+  "status": "COMPLETE_SHALLOW_MODEL_EAGER_BITWISE",
+  "pr": 7560,
+  "profile": "flux2",
+  "scope": "Full shallow random-init transformer forward, including model RoPE and per-forward packing; no pretrained model or end-to-end pipeline claim",
+  "source": {
+    "commit": "032950ed9533ae3565046defb2bf4d2f859938f9",
+    "manifest_sha256": "ed6d388930d0e9745787a6bdedb5cf1ce77939a4bba95c87844d90c545808143",
+    "verified_files": 3250,
+    "model_sha256": "3d2633c45252b476e8fa6b37b6edde50469c8b505f6232e75d67a98379faa3ca",
+    "operator_sha256": "0ebacf9d83d89a08419e92db9cdf5ffdbba3f37222a32a104db0b1bc29ad91b4",
+    "envs_sha256": "e5575aa152b8ebdd9d197dfdaf45004bb9cc94e3ff0be581895783f5df8ed5cd",
+    "rope_sha256": "59aaa1e22c2f6cead79f7929d37aa815114d1d3cf44918f650458bcfca03f604"
+  },
+  "source_root": "/inspire/ssd/project/video-generation/public/huangyuwei/experiments/omni-bitwise-20261008/model-production/sources/pr7560",
+  "script_sha256": "1d4eaff2c5de50b0c09a098adfab736bd936dba1c01653f870bd7dbb4b3efed9",
+  "production_operator_module": "/inspire/ssd/project/video-generation/public/huangyuwei/experiments/omni-bitwise-20261008/model-production/sources/pr7560/vllm_omni/diffusion/layers/fused_qk_norm_rope.py",
+  "production_operator_sha256": "0ebacf9d83d89a08419e92db9cdf5ffdbba3f37222a32a104db0b1bc29ad91b4",
+  "production_env_preset": true,
+  "environment_controls": {
+    "token_gate": "VLLM_OMNI_FUSED_QK_NORM_ROPE_MIN_TOKENS",
+    "numerics": "VLLM_OMNI_FUSED_QK_NORM_ROPE_NUMERICS"
+  },
+  "image": "cuda:13.0.2-cudnn-devel-ubuntu22.04",
+  "versions": {
+    "torch": "2.13.0",
+    "triton": "3.7.1",
+    "vllm": "0.29.0",
+    "diffusers": "0.40.0"
+  },
+  "cuda": "13.0",
+  "gpu_before": {
+    "physical_device": "4",
+    "returncode": 0,
+    "gpu": "NVIDIA H200, GPU-277d731c-4e7d-e8fd-8897-17c713f5149d, 595.58.03, P0, 345 MHz, 3201 MHz, 76.93 W, 30, 0 %",
+    "stderr": ""
+  },
+  "settings": {
+    "profile": "flux2",
+    "source": "/inspire/ssd/project/video-generation/public/huangyuwei/experiments/omni-bitwise-20261008/model-production/sources/pr7560",
+    "expected_commit": "032950ed9533ae3565046defb2bf4d2f859938f9",
+    "output": "/inspire/ssd/project/video-generation/public/huangyuwei/experiments/omni-bitwise-20261008/model-production/results/flux2_b2.json",
+    "seed": 20261008,
+    "batch_size": 2,
+    "text_tokens": 64,
+    "image_side": 16,
+    "warmup": 20,
+    "iterations": 20,
+    "rounds": 3
+  },
+  "arms": {
+    "original": {
+      "min_tokens": 1000000000000,
+      "numerics": "fast",
+      "norm_provider": "vllm_c"
+    },
+    "current": {
+      "min_tokens": 0,
+      "numerics": "fast",
+      "rms_norm_reduction": "triton",
+      "enable_fp_fusion": true
+    },
+    "exact": {
+      "min_tokens": 0,
+      "numerics": "vllm_cuda_128",
+      "rms_norm_reduction": "vllm_cuda_128",
+      "enable_fp_fusion": false
+    }
+  },
+  "compile": false,
+  "cuda_graph": false,
+  "dtype": "bfloat16",
+  "head_dim": 128,
+  "parallelism": {
+    "world": 1,
+    "tp": 1,
+    "sp": 1
+  },
+  "seed": 20261008,
+  "model_settings": {
+    "num_layers": 2,
+    "num_attention_heads": 48,
+    "attention_head_dim": 128,
+    "num_single_layers": 2,
+    "in_channels": 128,
+    "joint_attention_dim": 15360,
+    "guidance_embeds": true,
+    "timestep_guidance_channels": 256,
+    "axes_dims_rope": [
+      32,
+      32,
+      32,
+      32
+    ]
+  },
+  "input_tensors": {
+    "encoder_hidden_states": {
+      "shape": [
+        2,
+        64,
+        15360
+      ],
+      "dtype": "torch.bfloat16"
+    },
+    "guidance": {
+      "shape": [
+        2
+      ],
+      "dtype": "torch.float32"
+    },
+    "hidden_states": {
+      "shape": [
+        2,
+        256,
+        128
+      ],
+      "dtype": "torch.bfloat16"
+    },
+    "img_ids": {
+      "shape": [
+        256,
+        4
+      ],
+      "dtype": "torch.float32"
+    },
+    "timestep": {
+      "shape": [
+        2
+      ],
+      "dtype": "torch.float32"
+    },
+    "txt_ids": {
+      "shape": [
+        64,
+        4
+      ],
+      "dtype": "torch.float32"
+    }
+  },
+  "state_sha256": "ef078aa630382a40b83137c62f92ff3a31b7660d284445111a06d7bc14c0169d",
+  "input_sha256": "9f4db9a74776b219a26327ec3c80d54fdd934033669feea31bd5ef4347b1e63a",
+  "attention_backends": {
+    "transformer_blocks.0.attn.attn": "FLASH_ATTN",
+    "transformer_blocks.1.attn.attn": "FLASH_ATTN",
+    "single_transformer_blocks.0.attn.attn": "FLASH_ATTN",
+    "single_transformer_blocks.1.attn.attn": "FLASH_ATTN"
+  },
+  "expected_fused_calls": {
+    "joint": 2,
+    "single": 2
+  },
+  "rmsnorm_priority": "['vllm_c', 'native']",
+  "baseline_norm_dispatch": [
+    {
+      "module": "vllm.model_executor.layers.layernorm",
+      "forward": "<bound method RMSNorm.forward_native of RMSNorm(hidden_size=128, eps=1e-06)>",
+      "provider": "vllm_c",
+      "epsilon": 1e-06,
+      "input_shape": [
+        2,
+        256,
+        48,
+        128
+      ],
+      "input_stride": [
+        4718592,
+        18432,
+        128,
+        1
+      ]
+    },
+    {
+      "module": "vllm.model_executor.layers.layernorm",
+      "forward": "<bound method RMSNorm.forward_native of RMSNorm(hidden_size=128, eps=1e-06)>",
+      "provider": "vllm_c",
+      "epsilon": 1e-06,
+      "input_shape": [
+        2,
+        256,
+        48,
+        128
+      ],
+      "input_stride": [
+        4718592,
+        18432,
+        128,
+        1
+      ]
+    },
+    {
+      "module": "vllm.model_executor.layers.layernorm",
+      "forward": "<bound method RMSNorm.forward_native of RMSNorm(hidden_size=128, eps=1e-06)>",
+      "provider": "vllm_c",
+      "epsilon": 1e-06,
+      "input_shape": [
+        2,
+        64,
+        48,
+        128
+      ],
+      "input_stride": [
+        1179648,
+        18432,
+        128,
+        1
+      ]
+    },
+    {
+      "module": "vllm.model_executor.layers.layernorm",
+      "forward": "<bound method RMSNorm.forward_native of RMSNorm(hidden_size=128, eps=1e-06)>",
+      "provider": "vllm_c",
+      "epsilon": 1e-06,
+      "input_shape": [
+        2,
+        64,
+        48,
+        128
+      ],
+      "input_stride": [
+        1179648,
+        18432,
+        128,
+        1
+      ]
+    },
+    {
+      "module": "vllm.model_executor.layers.layernorm",
+      "forward": "<bound method RMSNorm.forward_native of RMSNorm(hidden_size=128, eps=1e-06)>",
+      "provider": "vllm_c",
+      "epsilon": 1e-06,
+      "input_shape": [
+        2,
+        256,
+        48,
+        128
+      ],
+      "input_stride": [
+        4718592,
+        18432,
+        128,
+        1
+      ]
+    },
+    {
+      "module": "vllm.model_executor.layers.layernorm",
+      "forward": "<bound method RMSNorm.forward_native of RMSNorm(hidden_size=128, eps=1e-06)>",
+      "provider": "vllm_c",
+      "epsilon": 1e-06,
+      "input_shape": [
+        2,
+        256,
+        48,
+        128
+      ],
+      "input_stride": [
+        4718592,
+        18432,
+        128,
+        1
+      ]
+    },
+    {
+      "module": "vllm.model_executor.layers.layernorm",
+      "forward": "<bound method RMSNorm.forward_native of RMSNorm(hidden_size=128, eps=1e-06)>",
+      "provider": "vllm_c",
+      "epsilon": 1e-06,
+      "input_shape": [
+        2,
+        64,
+        48,
+        128
+      ],
+      "input_stride": [
+        1179648,
+        18432,
+        128,
+        1
+      ]
+    },
+    {
+      "module": "vllm.model_executor.layers.layernorm",
+      "forward": "<bound method RMSNorm.forward_native of RMSNorm(hidden_size=128, eps=1e-06)>",
+      "provider": "vllm_c",
+      "epsilon": 1e-06,
+      "input_shape": [
+        2,
+        64,
+        48,
+        128
+      ],
+      "input_stride": [
+        1179648,
+        18432,
+        128,
+        1
+      ]
+    },
+    {
+      "module": "vllm.model_executor.layers.layernorm",
+      "forward": "<bound method RMSNorm.forward_native of RMSNorm(hidden_size=128, eps=1e-06)>",
+      "provider": "vllm_c",
+      "epsilon": 1e-06,
+      "input_shape": [
+        2,
+        320,
+        48,
+        128
+      ],
+      "input_stride": [
+        17694720,
+        55296,
+        128,
+        1
+      ]
+    },
+    {
+      "module": "vllm.model_executor.layers.layernorm",
+      "forward": "<bound method RMSNorm.forward_native of RMSNorm(hidden_size=128, eps=1e-06)>",
+      "provider": "vllm_c",
+      "epsilon": 1e-06,
+      "input_shape": [
+        2,
+        320,
+        48,
+        128
+      ],
+      "input_stride": [
+        17694720,
+        55296,
+        128,
+        1
+      ]
+    },
+    {
+      "module": "vllm.model_executor.layers.layernorm",
+      "forward": "<bound method RMSNorm.forward_native of RMSNorm(hidden_size=128, eps=1e-06)>",
+      "provider": "vllm_c",
+      "epsilon": 1e-06,
+      "input_shape": [
+        2,
+        320,
+        48,
+        128
+      ],
+      "input_stride": [
+        17694720,
+        55296,
+        128,
+        1
+      ]
+    },
+    {
+      "module": "vllm.model_executor.layers.layernorm",
+      "forward": "<bound method RMSNorm.forward_native of RMSNorm(hidden_size=128, eps=1e-06)>",
+      "provider": "vllm_c",
+      "epsilon": 1e-06,
+      "input_shape": [
+        2,
+        320,
+        48,
+        128
+      ],
+      "input_stride": [
+        17694720,
+        55296,
+        128,
+        1
+      ]
+    }
+  ],
+  "baseline_rope_dispatch": [
+    {
+      "module": "vllm_omni.diffusion.layers.rope",
+      "class": "RotaryEmbedding",
+      "selected_forward": {
+        "module": "vllm_omni.diffusion.layers.rope",
+        "qualname": "RotaryEmbedding.forward_cuda",
+        "source_file": "/inspire/ssd/project/video-generation/public/huangyuwei/experiments/omni-bitwise-20261008/model-production/sources/pr7560/vllm_omni/diffusion/layers/rope.py",
+        "source_sha256": "59aaa1e22c2f6cead79f7929d37aa815114d1d3cf44918f650458bcfca03f604"
+      },
+      "provider": "vllm_flash_attn",
+      "cuda_rotary_function": {
+        "module": "vllm.vllm_flash_attn.layers.rotary",
+        "qualname": "apply_rotary_emb",
+        "source_file": "/inspire/ssd/project/video-generation/public/huangyuwei/experiments/vomni-fusion-i64-20260921-r1/env-v029/lib/python3.12/site-packages/vllm/vllm_flash_attn/layers/rotary.py",
+        "source_sha256": "b826cc3339488815b26f974135a8f53d44149d019b4c82e1ad4240a6ec0e28c4"
+      },
+      "interleaved": true,
+      "half_head_dim": true,
+      "input_shape": [
+        2,
+        320,
+        48,
+        128
+      ],
+      "input_stride": [
+        1966080,
+        6144,
+        128,
+        1
+      ],
+      "cos_dtype": "torch.bfloat16",
+      "sin_dtype": "torch.bfloat16"
+    },
+    {
+      "module": "vllm_omni.diffusion.layers.rope",
+      "class": "RotaryEmbedding",
+      "selected_forward": {
+        "module": "vllm_omni.diffusion.layers.rope",
+        "qualname": "RotaryEmbedding.forward_cuda",
+        "source_file": "/inspire/ssd/project/video-generation/public/huangyuwei/experiments/omni-bitwise-20261008/model-production/sources/pr7560/vllm_omni/diffusion/layers/rope.py",
+        "source_sha256": "59aaa1e22c2f6cead79f7929d37aa815114d1d3cf44918f650458bcfca03f604"
+      },
+      "provider": "vllm_flash_attn",
+      "cuda_rotary_function": {
+        "module": "vllm.vllm_flash_attn.layers.rotary",
+        "qualname": "apply_rotary_emb",
+        "source_file": "/inspire/ssd/project/video-generation/public/huangyuwei/experiments/vomni-fusion-i64-20260921-r1/env-v029/lib/python3.12/site-packages/vllm/vllm_flash_attn/layers/rotary.py",
+        "source_sha256": "b826cc3339488815b26f974135a8f53d44149d019b4c82e1ad4240a6ec0e28c4"
+      },
+      "interleaved": true,
+      "half_head_dim": true,
+      "input_shape": [
+        2,
+        320,
+        48,
+        128
+      ],
+      "input_stride": [
+        1966080,
+        6144,
+        128,
+        1
+      ],
+      "cos_dtype": "torch.bfloat16",
+      "sin_dtype": "torch.bfloat16"
+    },
+    {
+      "module": "vllm_omni.diffusion.layers.rope",
+      "class": "RotaryEmbedding",
+      "selected_forward": {
+        "module": "vllm_omni.diffusion.layers.rope",
+        "qualname": "RotaryEmbedding.forward_cuda",
+        "source_file": "/inspire/ssd/project/video-generation/public/huangyuwei/experiments/omni-bitwise-20261008/model-production/sources/pr7560/vllm_omni/diffusion/layers/rope.py",
+        "source_sha256": "59aaa1e22c2f6cead79f7929d37aa815114d1d3cf44918f650458bcfca03f604"
+      },
+      "provider": "vllm_flash_attn",
+      "cuda_rotary_function": {
+        "module": "vllm.vllm_flash_attn.layers.rotary",
+        "qualname": "apply_rotary_emb",
+        "source_file": "/inspire/ssd/project/video-generation/public/huangyuwei/experiments/vomni-fusion-i64-20260921-r1/env-v029/lib/python3.12/site-packages/vllm/vllm_flash_attn/layers/rotary.py",
+        "source_sha256": "b826cc3339488815b26f974135a8f53d44149d019b4c82e1ad4240a6ec0e28c4"
+      },
+      "interleaved": true,
+      "half_head_dim": true,
+      "input_shape": [
+        2,
+        320,
+        48,
+        128
+      ],
+      "input_stride": [
+        1966080,
+        6144,
+        128,
+        1
+      ],
+      "cos_dtype": "torch.bfloat16",
+      "sin_dtype": "torch.bfloat16"
+    },
+    {
+      "module": "vllm_omni.diffusion.layers.rope",
+      "class": "RotaryEmbedding",
+      "selected_forward": {
+        "module": "vllm_omni.diffusion.layers.rope",
+        "qualname": "RotaryEmbedding.forward_cuda",
+        "source_file": "/inspire/ssd/project/video-generation/public/huangyuwei/experiments/omni-bitwise-20261008/model-production/sources/pr7560/vllm_omni/diffusion/layers/rope.py",
+        "source_sha256": "59aaa1e22c2f6cead79f7929d37aa815114d1d3cf44918f650458bcfca03f604"
+      },
+      "provider": "vllm_flash_attn",
+      "cuda_rotary_function": {
+        "module": "vllm.vllm_flash_attn.layers.rotary",
+        "qualname": "apply_rotary_emb",
+        "source_file": "/inspire/ssd/project/video-generation/public/huangyuwei/experiments/vomni-fusion-i64-20260921-r1/env-v029/lib/python3.12/site-packages/vllm/vllm_flash_attn/layers/rotary.py",
+        "source_sha256": "b826cc3339488815b26f974135a8f53d44149d019b4c82e1ad4240a6ec0e28c4"
+      },
+      "interleaved": true,
+      "half_head_dim": true,
+      "input_shape": [
+        2,
+        320,
+        48,
+        128
+      ],
+      "input_stride": [
+        1966080,
+        6144,
+        128,
+        1
+      ],
+      "cos_dtype": "torch.bfloat16",
+      "sin_dtype": "torch.bfloat16"
+    },
+    {
+      "module": "vllm_omni.diffusion.layers.rope",
+      "class": "RotaryEmbedding",
+      "selected_forward": {
+        "module": "vllm_omni.diffusion.layers.rope",
+        "qualname": "RotaryEmbedding.forward_cuda",
+        "source_file": "/inspire/ssd/project/video-generation/public/huangyuwei/experiments/omni-bitwise-20261008/model-production/sources/pr7560/vllm_omni/diffusion/layers/rope.py",
+        "source_sha256": "59aaa1e22c2f6cead79f7929d37aa815114d1d3cf44918f650458bcfca03f604"
+      },
+      "provider": "vllm_flash_attn",
+      "cuda_rotary_function": {
+        "module": "vllm.vllm_flash_attn.layers.rotary",
+        "qualname": "apply_rotary_emb",
+        "source_file": "/inspire/ssd/project/video-generation/public/huangyuwei/experiments/vomni-fusion-i64-20260921-r1/env-v029/lib/python3.12/site-packages/vllm/vllm_flash_attn/layers/rotary.py",
+        "source_sha256": "b826cc3339488815b26f974135a8f53d44149d019b4c82e1ad4240a6ec0e28c4"
+      },
+      "interleaved": true,
+      "half_head_dim": true,
+      "input_shape": [
+        2,
+        320,
+        48,
+        128
+      ],
+      "input_stride": [
+        1966080,
+        6144,
+        128,
+        1
+      ],
+      "cos_dtype": "torch.bfloat16",
+      "sin_dtype": "torch.bfloat16"
+    },
+    {
+      "module": "vllm_omni.diffusion.layers.rope",
+      "class": "RotaryEmbedding",
+      "selected_forward": {
+        "module": "vllm_omni.diffusion.layers.rope",
+        "qualname": "RotaryEmbedding.forward_cuda",
+        "source_file": "/inspire/ssd/project/video-generation/public/huangyuwei/experiments/omni-bitwise-20261008/model-production/sources/pr7560/vllm_omni/diffusion/layers/rope.py",
+        "source_sha256": "59aaa1e22c2f6cead79f7929d37aa815114d1d3cf44918f650458bcfca03f604"
+      },
+      "provider": "vllm_flash_attn",
+      "cuda_rotary_function": {
+        "module": "vllm.vllm_flash_attn.layers.rotary",
+        "qualname": "apply_rotary_emb",
+        "source_file": "/inspire/ssd/project/video-generation/public/huangyuwei/experiments/vomni-fusion-i64-20260921-r1/env-v029/lib/python3.12/site-packages/vllm/vllm_flash_attn/layers/rotary.py",
+        "source_sha256": "b826cc3339488815b26f974135a8f53d44149d019b4c82e1ad4240a6ec0e28c4"
+      },
+      "interleaved": true,
+      "half_head_dim": true,
+      "input_shape": [
+        2,
+        320,
+        48,
+        128
+      ],
+      "input_stride": [
+        1966080,
+        6144,
+        128,
+        1
+      ],
+      "cos_dtype": "torch.bfloat16",
+      "sin_dtype": "torch.bfloat16"
+    },
+    {
+      "module": "vllm_omni.diffusion.layers.rope",
+      "class": "RotaryEmbedding",
+      "selected_forward": {
+        "module": "vllm_omni.diffusion.layers.rope",
+        "qualname": "RotaryEmbedding.forward_cuda",
+        "source_file": "/inspire/ssd/project/video-generation/public/huangyuwei/experiments/omni-bitwise-20261008/model-production/sources/pr7560/vllm_omni/diffusion/layers/rope.py",
+        "source_sha256": "59aaa1e22c2f6cead79f7929d37aa815114d1d3cf44918f650458bcfca03f604"
+      },
+      "provider": "vllm_flash_attn",
+      "cuda_rotary_function": {
+        "module": "vllm.vllm_flash_attn.layers.rotary",
+        "qualname": "apply_rotary_emb",
+        "source_file": "/inspire/ssd/project/video-generation/public/huangyuwei/experiments/vomni-fusion-i64-20260921-r1/env-v029/lib/python3.12/site-packages/vllm/vllm_flash_attn/layers/rotary.py",
+        "source_sha256": "b826cc3339488815b26f974135a8f53d44149d019b4c82e1ad4240a6ec0e28c4"
+      },
+      "interleaved": true,
+      "half_head_dim": true,
+      "input_shape": [
+        2,
+        320,
+        48,
+        128
+      ],
+      "input_stride": [
+        1966080,
+        6144,
+        128,
+        1
+      ],
+      "cos_dtype": "torch.bfloat16",
+      "sin_dtype": "torch.bfloat16"
+    },
+    {
+      "module": "vllm_omni.diffusion.layers.rope",
+      "class": "RotaryEmbedding",
+      "selected_forward": {
+        "module": "vllm_omni.diffusion.layers.rope",
+        "qualname": "RotaryEmbedding.forward_cuda",
+        "source_file": "/inspire/ssd/project/video-generation/public/huangyuwei/experiments/omni-bitwise-20261008/model-production/sources/pr7560/vllm_omni/diffusion/layers/rope.py",
+        "source_sha256": "59aaa1e22c2f6cead79f7929d37aa815114d1d3cf44918f650458bcfca03f604"
+      },
+      "provider": "vllm_flash_attn",
+      "cuda_rotary_function": {
+        "module": "vllm.vllm_flash_attn.layers.rotary",
+        "qualname": "apply_rotary_emb",
+        "source_file": "/inspire/ssd/project/video-generation/public/huangyuwei/experiments/vomni-fusion-i64-20260921-r1/env-v029/lib/python3.12/site-packages/vllm/vllm_flash_attn/layers/rotary.py",
+        "source_sha256": "b826cc3339488815b26f974135a8f53d44149d019b4c82e1ad4240a6ec0e28c4"
+      },
+      "interleaved": true,
+      "half_head_dim": true,
+      "input_shape": [
+        2,
+        320,
+        48,
+        128
+      ],
+      "input_stride": [
+        1966080,
+        6144,
+        128,
+        1
+      ],
+      "cos_dtype": "torch.bfloat16",
+      "sin_dtype": "torch.bfloat16"
+    }
+  ],
+  "resolved_production_numerics": {
+    "original": {
+      "environment": "fast",
+      "rms_norm_reduction": "triton",
+      "enable_fp_fusion": true
+    },
+    "current": {
+      "environment": "fast",
+      "rms_norm_reduction": "triton",
+      "enable_fp_fusion": true
+    },
+    "exact": {
+      "environment": "vllm_cuda_128",
+      "rms_norm_reduction": "vllm_cuda_128",
+      "enable_fp_fusion": false
+    }
+  },
+  "repeatability": {
+    "original": {
+      "bitwise": true,
+      "tensors": [
+        {
+          "shape": [
+            2,
+            256,
+            128
+          ],
+          "dtype": "torch.bfloat16",
+          "byte_mismatches": 0,
+          "finite": true,
+          "max_abs": 0.0
+        }
+      ]
+    },
+    "current": {
+      "bitwise": true,
+      "tensors": [
+        {
+          "shape": [
+            2,
+            256,
+            128
+          ],
+          "dtype": "torch.bfloat16",
+          "byte_mismatches": 0,
+          "finite": true,
+          "max_abs": 0.0
+        }
+      ]
+    },
+    "exact": {
+      "bitwise": true,
+      "tensors": [
+        {
+          "shape": [
+            2,
+            256,
+            128
+          ],
+          "dtype": "torch.bfloat16",
+          "byte_mismatches": 0,
+          "finite": true,
+          "max_abs": 0.0
+        }
+      ]
+    }
+  },
+  "observed_fused_calls": {
+    "original": {
+      "joint": 0,
+      "single": 0
+    },
+    "current": {
+      "joint": 2,
+      "single": 2
+    },
+    "exact": {
+      "joint": 2,
+      "single": 2
+    }
+  },
+  "parity": {
+    "current": {
+      "bitwise": false,
+      "tensors": [
+        {
+          "shape": [
+            2,
+            256,
+            128
+          ],
+          "dtype": "torch.bfloat16",
+          "byte_mismatches": 53844,
+          "finite": true,
+          "max_abs": 0.0810546875
+        }
+      ]
+    },
+    "exact": {
+      "bitwise": true,
+      "tensors": [
+        {
+          "shape": [
+            2,
+            256,
+            128
+          ],
+          "dtype": "torch.bfloat16",
+          "byte_mismatches": 0,
+          "finite": true,
+          "max_abs": 0.0
+        }
+      ]
+    }
+  },
+  "eager_abba": {
+    "current": {
+      "order": [
+        "original",
+        "current",
+        "current",
+        "original"
+      ],
+      "samples_ms": {
+        "original": [
+          5.886430358886718,
+          5.923627090454102,
+          6.14986572265625,
+          5.922305679321289,
+          5.912980651855468,
+          5.912776184082031
+        ],
+        "current": [
+          5.616060638427735,
+          5.632632064819336,
+          5.7745216369628904,
+          5.687452697753907,
+          5.6372833251953125,
+          5.621948623657227
+        ]
+      },
+      "median_ms": {
+        "original": 5.9176431655883786,
+        "current": 5.634957695007325
+      },
+      "latency_saving_pct": 4.77699419635329
+    },
+    "exact": {
+      "order": [
+        "original",
+        "exact",
+        "exact",
+        "original"
+      ],
+      "samples_ms": {
+        "original": [
+          5.987862396240234,
+          6.005227279663086,
+          5.961033630371094,
+          5.993689727783203,
+          5.880319976806641,
+          5.960286331176758
+        ],
+        "exact": [
+          5.792798233032227,
+          5.8289329528808596,
+          5.641315078735351,
+          5.708143997192383,
+          5.69502067565918,
+          5.709140777587891
+        ]
+      },
+      "median_ms": {
+        "original": 5.974448013305664,
+        "exact": 5.708642387390137
+      },
+      "latency_saving_pct": 4.449040736877318
+    }
+  },
+  "parity_after_timing": {
+    "bitwise": true,
+    "tensors": [
+      {
+        "shape": [
+          2,
+          256,
+          128
+        ],
+        "dtype": "torch.bfloat16",
+        "byte_mismatches": 0,
+        "finite": true,
+        "max_abs": 0.0
+      }
+    ]
+  },
+  "gpu_after": {
+    "physical_device": "4",
+    "returncode": 0,
+    "gpu": "NVIDIA H200, GPU-277d731c-4e7d-e8fd-8897-17c713f5149d, 595.58.03, P0, 1980 MHz, 3201 MHz, 121.69 W, 34, 0 %",
+    "stderr": ""
+  }
+}

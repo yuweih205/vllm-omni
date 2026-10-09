@@ -1,0 +1,79 @@
+{
+  "status": "SIX_PRODUCTION_EAGER_MODEL_CASES_VALIDATED",
+  "job": "hyw-omni-bitwise-model-1008-r3",
+  "archive_sha256": "d8992809d561891ce2d9809b907801c00c79094c2d6f971faa6264b0fb3e69ad",
+  "rows": [
+    {
+      "pr": 7560,
+      "profile": "flux2",
+      "batch": 1,
+      "original_exact_pair_ms": 5.407557487487793,
+      "current_ms": 4.7830047607421875,
+      "exact_ms": 4.851823043823242,
+      "saving_pct": 10.276995574257498,
+      "extra_vs_current_pct": 1.4388085842167664,
+      "bitwise_byte_mismatches": 0,
+      "raw_sha256": "5f579cf563cb42d8a56d2494c0e3cbdf66f384420186ba65fd60731ba65048a5"
+    },
+    {
+      "pr": 7560,
+      "profile": "flux2",
+      "batch": 2,
+      "original_exact_pair_ms": 5.974448013305664,
+      "current_ms": 5.634957695007325,
+      "exact_ms": 5.708642387390137,
+      "saving_pct": 4.449040736877318,
+      "extra_vs_current_pct": 1.3076352365182453,
+      "bitwise_byte_mismatches": 0,
+      "raw_sha256": "2ea16748c0c8d647754cc86f769e246e10bc782fcdb490bd0610a3d643ce2f64"
+    },
+    {
+      "pr": 7595,
+      "profile": "flux1",
+      "batch": 1,
+      "original_exact_pair_ms": 4.902913665771484,
+      "current_ms": 4.339882469177246,
+      "exact_ms": 4.39306640625,
+      "saving_pct": 10.398862682018251,
+      "extra_vs_current_pct": 1.2254695248195668,
+      "bitwise_byte_mismatches": 0,
+      "raw_sha256": "741dce87683ca6c7e8b889ef28ca8c57f1f85ddb46833ef38145c4f78cec2619"
+    },
+    {
+      "pr": 7595,
+      "profile": "flux1",
+      "batch": 2,
+      "original_exact_pair_ms": 5.158641624450684,
+      "current_ms": 4.580353736877441,
+      "exact_ms": 4.642147254943847,
+      "saving_pct": 10.01221653116553,
+      "extra_vs_current_pct": 1.3490992533806256,
+      "bitwise_byte_mismatches": 0,
+      "raw_sha256": "9b756e018e3ba7ff12c2eae7870ead49289b31b17065503f1c5c4eac35645923"
+    },
+    {
+      "pr": 7600,
+      "profile": "ovis",
+      "batch": 1,
+      "original_exact_pair_ms": 4.8608448028564455,
+      "current_ms": 4.271121597290039,
+      "exact_ms": 4.331772804260254,
+      "saving_pct": 10.884363110817397,
+      "extra_vs_current_pct": 1.4200299754682177,
+      "bitwise_byte_mismatches": 0,
+      "raw_sha256": "4965e5c1a26195c0f0e0dd295d5a1b871fdeec6f5c4fe16d92fcfae9a1d58451"
+    },
+    {
+      "pr": 7600,
+      "profile": "ovis",
+      "batch": 2,
+      "original_exact_pair_ms": 5.147882461547852,
+      "current_ms": 4.538937568664551,
+      "exact_ms": 4.599460029602051,
+      "saving_pct": 10.653359629755455,
+      "extra_vs_current_pct": 1.333405891178785,
+      "bitwise_byte_mismatches": 0,
+      "raw_sha256": "8b066d6a9ebb80b3049d6372e7eac6e955806a49b19bb0025a20e0e919ca9df7"
+    }
+  ]
+}
