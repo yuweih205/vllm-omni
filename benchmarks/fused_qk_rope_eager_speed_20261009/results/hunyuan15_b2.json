@@ -1,0 +1,665 @@
+{
+  "status": "COMPLETE_SHALLOW_MODEL_EAGER_BITWISE",
+  "pr": 7596,
+  "profile": "hunyuan15",
+  "scope": "Full shallow random-init transformer forward, including model RoPE and per-forward packing; no pretrained model or end-to-end pipeline claim",
+  "source": {
+    "commit": "cce0fdfd9a3d810be67cda07eff537ef11cb99c5",
+    "manifest_sha256": "2de171e73b76cd5a9ae9d484ff5e8d811967dc6049bbd891d2e282ef731f2dd4",
+    "verified_files": 3251,
+    "model_sha256": "ccdbf14e887b123a3bb256970f55234fc90c27d14bd57be26ee8ec4b3ae31033",
+    "operator_sha256": "0ebacf9d83d89a08419e92db9cdf5ffdbba3f37222a32a104db0b1bc29ad91b4",
+    "envs_sha256": "e5575aa152b8ebdd9d197dfdaf45004bb9cc94e3ff0be581895783f5df8ed5cd",
+    "rope_sha256": "59aaa1e22c2f6cead79f7929d37aa815114d1d3cf44918f650458bcfca03f604"
+  },
+  "source_root": "/inspire/ssd/project/video-generation/public/huangyuwei/experiments/eager-bitwise-speed-20261008/sources/pr7596",
+  "script_sha256": "ee3053f300cb21825d0002109ea5a16995e92ba168a2f6445d4d831ef172940b",
+  "production_operator_module": "/inspire/ssd/project/video-generation/public/huangyuwei/experiments/eager-bitwise-speed-20261008/sources/pr7596/vllm_omni/diffusion/layers/fused_qk_norm_rope.py",
+  "production_operator_sha256": "0ebacf9d83d89a08419e92db9cdf5ffdbba3f37222a32a104db0b1bc29ad91b4",
+  "production_env_preset": true,
+  "environment_controls": {
+    "token_gate": "VLLM_OMNI_FUSED_QK_NORM_ROPE_MIN_TOKENS",
+    "numerics": "VLLM_OMNI_FUSED_QK_NORM_ROPE_NUMERICS"
+  },
+  "image": "cuda:13.0.2-cudnn-devel-ubuntu22.04",
+  "versions": {
+    "torch": "2.13.0",
+    "triton": "3.7.1",
+    "vllm": "0.29.0",
+    "diffusers": "0.40.0"
+  },
+  "cuda": "13.0",
+  "gpu_before": {
+    "physical_device": "5",
+    "returncode": 0,
+    "gpu": "NVIDIA H200, GPU-e387043c-8d25-d4e5-415e-8be9d875c66f, 595.58.03, P0, 345 MHz, 3201 MHz, 78.12 W, 28, 0 %",
+    "stderr": ""
+  },
+  "settings": {
+    "profile": "hunyuan15",
+    "source": "/inspire/ssd/project/video-generation/public/huangyuwei/experiments/eager-bitwise-speed-20261008/sources/pr7596",
+    "expected_commit": "cce0fdfd9a3d810be67cda07eff537ef11cb99c5",
+    "output": "/inspire/ssd/project/video-generation/public/huangyuwei/experiments/eager-bitwise-speed-20261008/results/hunyuan15_b2.json",
+    "seed": 20261008,
+    "batch_size": 2,
+    "text_tokens": 512,
+    "image_side": 64,
+    "warmup": 10,
+    "iterations": 10,
+    "rounds": 3
+  },
+  "arms": {
+    "original": {
+      "min_tokens": 1000000000000,
+      "numerics": "fast",
+      "norm_provider": "vllm_c"
+    },
+    "current": {
+      "min_tokens": 0,
+      "numerics": "fast",
+      "rms_norm_reduction": "triton",
+      "enable_fp_fusion": true
+    },
+    "exact": {
+      "min_tokens": 0,
+      "numerics": "vllm_cuda_128",
+      "rms_norm_reduction": "vllm_cuda_128",
+      "enable_fp_fusion": false
+    }
+  },
+  "compile": false,
+  "cuda_graph": false,
+  "dtype": "bfloat16",
+  "head_dim": 128,
+  "parallelism": {
+    "world": 1,
+    "tp": 1,
+    "sp": 1
+  },
+  "seed": 20261008,
+  "model_settings": {
+    "num_layers": 2,
+    "num_attention_heads": 16,
+    "attention_head_dim": 128,
+    "num_refiner_layers": 1,
+    "in_channels": 65,
+    "out_channels": 32,
+    "text_embed_dim": 3584,
+    "text_embed_2_dim": 1472,
+    "image_embed_dim": 1152,
+    "patch_size": 1,
+    "patch_size_t": 1,
+    "rope_axes_dim": [
+      16,
+      56,
+      56
+    ]
+  },
+  "input_tensors": {
+    "encoder_attention_mask": {
+      "shape": [
+        2,
+        512
+      ],
+      "dtype": "torch.bool"
+    },
+    "encoder_attention_mask_2": {
+      "shape": [
+        2,
+        16
+      ],
+      "dtype": "torch.bool"
+    },
+    "encoder_hidden_states": {
+      "shape": [
+        2,
+        512,
+        3584
+      ],
+      "dtype": "torch.bfloat16"
+    },
+    "encoder_hidden_states_2": {
+      "shape": [
+        2,
+        16,
+        1472
+      ],
+      "dtype": "torch.bfloat16"
+    },
+    "hidden_states": {
+      "shape": [
+        2,
+        65,
+        1,
+        64,
+        64
+      ],
+      "dtype": "torch.bfloat16"
+    },
+    "image_embeds": {
+      "shape": [
+        2,
+        16,
+        1152
+      ],
+      "dtype": "torch.bfloat16"
+    },
+    "image_embeds_mask": {
+      "shape": [
+        2,
+        16
+      ],
+      "dtype": "torch.bool"
+    },
+    "timestep": {
+      "shape": [
+        2
+      ],
+      "dtype": "torch.bfloat16"
+    }
+  },
+  "state_sha256": "c29ef658376088c10413657cf2dc601459c02cf10a09aa8a62c225fd93eda92b",
+  "input_sha256": "bf4bb8e7882e76d697da85dafef0cb3a95b8a0341080571e7a9a978d5fb289f6",
+  "attention_backends": {
+    "transformer_blocks.0.attn.attn": "FLASH_ATTN",
+    "transformer_blocks.1.attn.attn": "FLASH_ATTN"
+  },
+  "expected_fused_calls": {
+    "joint": 2,
+    "single": 0
+  },
+  "rmsnorm_priority": "['vllm_c', 'native']",
+  "baseline_norm_dispatch": [
+    {
+      "module": "vllm.model_executor.layers.layernorm",
+      "forward": "<bound method RMSNorm.forward_native of RMSNorm(hidden_size=128, eps=1e-06)>",
+      "provider": "vllm_c",
+      "epsilon": 1e-06,
+      "input_shape": [
+        2,
+        4096,
+        16,
+        128
+      ],
+      "input_stride": [
+        25165824,
+        6144,
+        128,
+        1
+      ]
+    },
+    {
+      "module": "vllm.model_executor.layers.layernorm",
+      "forward": "<bound method RMSNorm.forward_native of RMSNorm(hidden_size=128, eps=1e-06)>",
+      "provider": "vllm_c",
+      "epsilon": 1e-06,
+      "input_shape": [
+        2,
+        4096,
+        16,
+        128
+      ],
+      "input_stride": [
+        25165824,
+        6144,
+        128,
+        1
+      ]
+    },
+    {
+      "module": "vllm.model_executor.layers.layernorm",
+      "forward": "<bound method RMSNorm.forward_native of RMSNorm(hidden_size=128, eps=1e-06)>",
+      "provider": "vllm_c",
+      "epsilon": 1e-06,
+      "input_shape": [
+        2,
+        544,
+        16,
+        128
+      ],
+      "input_stride": [
+        3342336,
+        6144,
+        128,
+        1
+      ]
+    },
+    {
+      "module": "vllm.model_executor.layers.layernorm",
+      "forward": "<bound method RMSNorm.forward_native of RMSNorm(hidden_size=128, eps=1e-06)>",
+      "provider": "vllm_c",
+      "epsilon": 1e-06,
+      "input_shape": [
+        2,
+        544,
+        16,
+        128
+      ],
+      "input_stride": [
+        3342336,
+        6144,
+        128,
+        1
+      ]
+    },
+    {
+      "module": "vllm.model_executor.layers.layernorm",
+      "forward": "<bound method RMSNorm.forward_native of RMSNorm(hidden_size=128, eps=1e-06)>",
+      "provider": "vllm_c",
+      "epsilon": 1e-06,
+      "input_shape": [
+        2,
+        4096,
+        16,
+        128
+      ],
+      "input_stride": [
+        25165824,
+        6144,
+        128,
+        1
+      ]
+    },
+    {
+      "module": "vllm.model_executor.layers.layernorm",
+      "forward": "<bound method RMSNorm.forward_native of RMSNorm(hidden_size=128, eps=1e-06)>",
+      "provider": "vllm_c",
+      "epsilon": 1e-06,
+      "input_shape": [
+        2,
+        4096,
+        16,
+        128
+      ],
+      "input_stride": [
+        25165824,
+        6144,
+        128,
+        1
+      ]
+    },
+    {
+      "module": "vllm.model_executor.layers.layernorm",
+      "forward": "<bound method RMSNorm.forward_native of RMSNorm(hidden_size=128, eps=1e-06)>",
+      "provider": "vllm_c",
+      "epsilon": 1e-06,
+      "input_shape": [
+        2,
+        544,
+        16,
+        128
+      ],
+      "input_stride": [
+        3342336,
+        6144,
+        128,
+        1
+      ]
+    },
+    {
+      "module": "vllm.model_executor.layers.layernorm",
+      "forward": "<bound method RMSNorm.forward_native of RMSNorm(hidden_size=128, eps=1e-06)>",
+      "provider": "vllm_c",
+      "epsilon": 1e-06,
+      "input_shape": [
+        2,
+        544,
+        16,
+        128
+      ],
+      "input_stride": [
+        3342336,
+        6144,
+        128,
+        1
+      ]
+    }
+  ],
+  "baseline_rope_dispatch": [
+    {
+      "module": "vllm_omni.diffusion.layers.rope",
+      "class": "RotaryEmbedding",
+      "selected_forward": {
+        "module": "vllm_omni.diffusion.layers.rope",
+        "qualname": "RotaryEmbedding.forward_cuda",
+        "source_file": "/inspire/ssd/project/video-generation/public/huangyuwei/experiments/eager-bitwise-speed-20261008/sources/pr7596/vllm_omni/diffusion/layers/rope.py",
+        "source_sha256": "59aaa1e22c2f6cead79f7929d37aa815114d1d3cf44918f650458bcfca03f604"
+      },
+      "provider": "vllm_flash_attn",
+      "cuda_rotary_function": {
+        "module": "vllm.vllm_flash_attn.layers.rotary",
+        "qualname": "apply_rotary_emb",
+        "source_file": "/inspire/ssd/project/video-generation/public/huangyuwei/experiments/vomni-fusion-i64-20260921-r1/env-v029/lib/python3.12/site-packages/vllm/vllm_flash_attn/layers/rotary.py",
+        "source_sha256": "b826cc3339488815b26f974135a8f53d44149d019b4c82e1ad4240a6ec0e28c4"
+      },
+      "interleaved": true,
+      "half_head_dim": true,
+      "input_shape": [
+        2,
+        4096,
+        16,
+        128
+      ],
+      "input_stride": [
+        8388608,
+        2048,
+        128,
+        1
+      ],
+      "cos_dtype": "torch.bfloat16",
+      "sin_dtype": "torch.bfloat16"
+    },
+    {
+      "module": "vllm_omni.diffusion.layers.rope",
+      "class": "RotaryEmbedding",
+      "selected_forward": {
+        "module": "vllm_omni.diffusion.layers.rope",
+        "qualname": "RotaryEmbedding.forward_cuda",
+        "source_file": "/inspire/ssd/project/video-generation/public/huangyuwei/experiments/eager-bitwise-speed-20261008/sources/pr7596/vllm_omni/diffusion/layers/rope.py",
+        "source_sha256": "59aaa1e22c2f6cead79f7929d37aa815114d1d3cf44918f650458bcfca03f604"
+      },
+      "provider": "vllm_flash_attn",
+      "cuda_rotary_function": {
+        "module": "vllm.vllm_flash_attn.layers.rotary",
+        "qualname": "apply_rotary_emb",
+        "source_file": "/inspire/ssd/project/video-generation/public/huangyuwei/experiments/vomni-fusion-i64-20260921-r1/env-v029/lib/python3.12/site-packages/vllm/vllm_flash_attn/layers/rotary.py",
+        "source_sha256": "b826cc3339488815b26f974135a8f53d44149d019b4c82e1ad4240a6ec0e28c4"
+      },
+      "interleaved": true,
+      "half_head_dim": true,
+      "input_shape": [
+        2,
+        4096,
+        16,
+        128
+      ],
+      "input_stride": [
+        8388608,
+        2048,
+        128,
+        1
+      ],
+      "cos_dtype": "torch.bfloat16",
+      "sin_dtype": "torch.bfloat16"
+    },
+    {
+      "module": "vllm_omni.diffusion.layers.rope",
+      "class": "RotaryEmbedding",
+      "selected_forward": {
+        "module": "vllm_omni.diffusion.layers.rope",
+        "qualname": "RotaryEmbedding.forward_cuda",
+        "source_file": "/inspire/ssd/project/video-generation/public/huangyuwei/experiments/eager-bitwise-speed-20261008/sources/pr7596/vllm_omni/diffusion/layers/rope.py",
+        "source_sha256": "59aaa1e22c2f6cead79f7929d37aa815114d1d3cf44918f650458bcfca03f604"
+      },
+      "provider": "vllm_flash_attn",
+      "cuda_rotary_function": {
+        "module": "vllm.vllm_flash_attn.layers.rotary",
+        "qualname": "apply_rotary_emb",
+        "source_file": "/inspire/ssd/project/video-generation/public/huangyuwei/experiments/vomni-fusion-i64-20260921-r1/env-v029/lib/python3.12/site-packages/vllm/vllm_flash_attn/layers/rotary.py",
+        "source_sha256": "b826cc3339488815b26f974135a8f53d44149d019b4c82e1ad4240a6ec0e28c4"
+      },
+      "interleaved": true,
+      "half_head_dim": true,
+      "input_shape": [
+        2,
+        4096,
+        16,
+        128
+      ],
+      "input_stride": [
+        8388608,
+        2048,
+        128,
+        1
+      ],
+      "cos_dtype": "torch.bfloat16",
+      "sin_dtype": "torch.bfloat16"
+    },
+    {
+      "module": "vllm_omni.diffusion.layers.rope",
+      "class": "RotaryEmbedding",
+      "selected_forward": {
+        "module": "vllm_omni.diffusion.layers.rope",
+        "qualname": "RotaryEmbedding.forward_cuda",
+        "source_file": "/inspire/ssd/project/video-generation/public/huangyuwei/experiments/eager-bitwise-speed-20261008/sources/pr7596/vllm_omni/diffusion/layers/rope.py",
+        "source_sha256": "59aaa1e22c2f6cead79f7929d37aa815114d1d3cf44918f650458bcfca03f604"
+      },
+      "provider": "vllm_flash_attn",
+      "cuda_rotary_function": {
+        "module": "vllm.vllm_flash_attn.layers.rotary",
+        "qualname": "apply_rotary_emb",
+        "source_file": "/inspire/ssd/project/video-generation/public/huangyuwei/experiments/vomni-fusion-i64-20260921-r1/env-v029/lib/python3.12/site-packages/vllm/vllm_flash_attn/layers/rotary.py",
+        "source_sha256": "b826cc3339488815b26f974135a8f53d44149d019b4c82e1ad4240a6ec0e28c4"
+      },
+      "interleaved": true,
+      "half_head_dim": true,
+      "input_shape": [
+        2,
+        4096,
+        16,
+        128
+      ],
+      "input_stride": [
+        8388608,
+        2048,
+        128,
+        1
+      ],
+      "cos_dtype": "torch.bfloat16",
+      "sin_dtype": "torch.bfloat16"
+    }
+  ],
+  "resolved_production_numerics": {
+    "original": {
+      "environment": "fast",
+      "rms_norm_reduction": "triton",
+      "enable_fp_fusion": true
+    },
+    "current": {
+      "environment": "fast",
+      "rms_norm_reduction": "triton",
+      "enable_fp_fusion": true
+    },
+    "exact": {
+      "environment": "vllm_cuda_128",
+      "rms_norm_reduction": "vllm_cuda_128",
+      "enable_fp_fusion": false
+    }
+  },
+  "repeatability": {
+    "original": {
+      "bitwise": true,
+      "tensors": [
+        {
+          "shape": [
+            2,
+            32,
+            1,
+            64,
+            64
+          ],
+          "dtype": "torch.bfloat16",
+          "byte_mismatches": 0,
+          "finite": true,
+          "max_abs": 0.0
+        }
+      ]
+    },
+    "current": {
+      "bitwise": true,
+      "tensors": [
+        {
+          "shape": [
+            2,
+            32,
+            1,
+            64,
+            64
+          ],
+          "dtype": "torch.bfloat16",
+          "byte_mismatches": 0,
+          "finite": true,
+          "max_abs": 0.0
+        }
+      ]
+    },
+    "exact": {
+      "bitwise": true,
+      "tensors": [
+        {
+          "shape": [
+            2,
+            32,
+            1,
+            64,
+            64
+          ],
+          "dtype": "torch.bfloat16",
+          "byte_mismatches": 0,
+          "finite": true,
+          "max_abs": 0.0
+        }
+      ]
+    }
+  },
+  "observed_fused_calls": {
+    "original": {
+      "joint": 0,
+      "single": 0
+    },
+    "current": {
+      "joint": 2,
+      "single": 0
+    },
+    "exact": {
+      "joint": 2,
+      "single": 0
+    }
+  },
+  "parity": {
+    "current": {
+      "bitwise": false,
+      "tensors": [
+        {
+          "shape": [
+            2,
+            32,
+            1,
+            64,
+            64
+          ],
+          "dtype": "torch.bfloat16",
+          "byte_mismatches": 106371,
+          "finite": true,
+          "max_abs": 0.015625
+        }
+      ]
+    },
+    "exact": {
+      "bitwise": true,
+      "tensors": [
+        {
+          "shape": [
+            2,
+            32,
+            1,
+            64,
+            64
+          ],
+          "dtype": "torch.bfloat16",
+          "byte_mismatches": 0,
+          "finite": true,
+          "max_abs": 0.0
+        }
+      ]
+    }
+  },
+  "eager_abba": {
+    "current": {
+      "order": [
+        "original",
+        "current",
+        "current",
+        "original"
+      ],
+      "samples_ms": {
+        "original": [
+          9.849756622314453,
+          9.846121978759765,
+          9.848799896240234,
+          9.851840209960937,
+          9.851696014404297,
+          9.854764556884765
+        ],
+        "current": [
+          9.286521911621094,
+          9.367276763916015,
+          9.291616058349609,
+          9.288790130615235,
+          9.300457763671876,
+          9.288034820556641
+        ]
+      },
+      "median_ms": {
+        "original": 9.850726318359374,
+        "current": 9.290203094482422
+      },
+      "latency_saving_pct": 5.6901715240253115
+    },
+    "exact": {
+      "order": [
+        "original",
+        "exact",
+        "exact",
+        "original"
+      ],
+      "samples_ms": {
+        "original": [
+          9.85767059326172,
+          9.8608642578125,
+          9.859590148925781,
+          9.847341156005859,
+          9.887667083740235,
+          9.839494323730468
+        ],
+        "exact": [
+          9.313478088378906,
+          9.31176300048828,
+          9.30447006225586,
+          9.311513519287109,
+          9.311676788330079,
+          9.304009246826173
+        ]
+      },
+      "median_ms": {
+        "original": 9.85863037109375,
+        "exact": 9.311595153808593
+      },
+      "latency_saving_pct": 5.548795285895947
+    }
+  },
+  "parity_after_timing": {
+    "bitwise": true,
+    "tensors": [
+      {
+        "shape": [
+          2,
+          32,
+          1,
+          64,
+          64
+        ],
+        "dtype": "torch.bfloat16",
+        "byte_mismatches": 0,
+        "finite": true,
+        "max_abs": 0.0
+      }
+    ]
+  },
+  "gpu_after": {
+    "physical_device": "5",
+    "returncode": 0,
+    "gpu": "NVIDIA H200, GPU-e387043c-8d25-d4e5-415e-8be9d875c66f, 595.58.03, P0, 1980 MHz, 3201 MHz, 221.09 W, 32, 6 %",
+    "stderr": ""
+  }
+}

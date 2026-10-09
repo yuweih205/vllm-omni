@@ -1,0 +1,143 @@
+{
+  "status": "COMPLETE_QWEN_EAGER_BITWISE_SPEED",
+  "pr": 7594,
+  "source": {
+    "commit": "8b57eb5986c93f6562fd730e3552f2c04e418b47",
+    "public_base": "dfc7f368a12170f9b5e41c33245d512ccd8605d7",
+    "manifest_sha256": "60478f9a69f25c02bb17dcc37b4c2a60f9f351f055e1b83a5dcf33a65a857bd0",
+    "verified_files": 3250,
+    "operator_sha256": "0ebacf9d83d89a08419e92db9cdf5ffdbba3f37222a32a104db0b1bc29ad91b4"
+  },
+  "scope": "Full 60-layer random-weight transformer; existing per-stream fused chain vs joint fusion; no pretrained generation",
+  "script_sha256": "90d50e465edc3d7a25deb194e34f289bf3a857ef74061cd64f4a1e2e82266e5a",
+  "support_sha256": "d467210a9672b0f730f1b539a0462e9b7ad110c8572dacb4774839aab5d313cc",
+  "versions": {
+    "torch": "2.13.0",
+    "vllm": "0.29.0",
+    "triton": "3.7.1",
+    "diffusers": "0.40.0"
+  },
+  "gpu_before": {
+    "physical_device": "0",
+    "gpu": "NVIDIA H200, GPU-505a63fa-4049-ecd0-c4ba-d6aad79f1fe9, 595.58.03, P0, 345 MHz, 3201 MHz, 77.08 W, 30, 0 %",
+    "stderr": ""
+  },
+  "dtype": "bfloat16",
+  "compile": false,
+  "cuda_graph": false,
+  "parallelism": {
+    "world": 1,
+    "tp": 1,
+    "sp": 1
+  },
+  "layers": 60,
+  "heads": 24,
+  "head_dim": 128,
+  "batch": 1,
+  "text_tokens": 512,
+  "image_tokens": 4096,
+  "constructor_seed": 0,
+  "parameter_and_input_generator_seed": 1,
+  "num_iterations_per_sample": 10,
+  "rounds": 3,
+  "warmup_calls_per_arm": 3,
+  "gate_both_arms": 0,
+  "numerics_both_arms": "fast",
+  "input_sha256": "4347e4d592b51845aa384bb4f031acf0c4d3d8177289a14c2c2094f217f5542e",
+  "parameter_count": 20430401088,
+  "attention_backends": [
+    "FLASH_ATTN"
+  ],
+  "counts": {
+    "per_stream": {
+      "joint": 0,
+      "single": 120
+    },
+    "joint": {
+      "joint": 60,
+      "single": 0
+    }
+  },
+  "repeatability": {
+    "per_stream": {
+      "bitwise": true,
+      "byte_mismatches": 0,
+      "finite": true,
+      "shape": [
+        1,
+        4096,
+        64
+      ],
+      "dtype": "torch.bfloat16",
+      "max_abs": 0.0
+    },
+    "joint": {
+      "bitwise": true,
+      "byte_mismatches": 0,
+      "finite": true,
+      "shape": [
+        1,
+        4096,
+        64
+      ],
+      "dtype": "torch.bfloat16",
+      "max_abs": 0.0
+    }
+  },
+  "parity_before": {
+    "bitwise": true,
+    "byte_mismatches": 0,
+    "finite": true,
+    "shape": [
+      1,
+      4096,
+      64
+    ],
+    "dtype": "torch.bfloat16",
+    "max_abs": 0.0
+  },
+  "eager_abba_ms": {
+    "samples": {
+      "per_stream": [
+        166.56746826171874,
+        166.95196533203125,
+        167.03485107421875,
+        168.12677001953125,
+        167.86370849609375,
+        168.2365478515625
+      ],
+      "joint": [
+        161.4615966796875,
+        161.7388916015625,
+        161.52156982421874,
+        161.7919921875,
+        161.97315673828126,
+        162.5168212890625
+      ]
+    },
+    "median": {
+      "per_stream": 167.44927978515625,
+      "joint": 161.76544189453125
+    },
+    "speedup": 1.035136292548385,
+    "latency_saving_pct": 3.394363892109642
+  },
+  "parity_after": {
+    "bitwise": true,
+    "byte_mismatches": 0,
+    "finite": true,
+    "shape": [
+      1,
+      4096,
+      64
+    ],
+    "dtype": "torch.bfloat16",
+    "max_abs": 0.0
+  },
+  "gpu_after": {
+    "physical_device": "0",
+    "gpu": "NVIDIA H200, GPU-505a63fa-4049-ecd0-c4ba-d6aad79f1fe9, 595.58.03, P0, 1890 MHz, 3201 MHz, 662.33 W, 50, 99 %",
+    "stderr": ""
+  },
+  "peak_allocated_gib": 76.18268394470215
+}

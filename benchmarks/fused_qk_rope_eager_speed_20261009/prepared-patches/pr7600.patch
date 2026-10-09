@@ -1,0 +1,666 @@
+diff --git a/docs/configuration/environment_variables.md b/docs/configuration/environment_variables.md
+index a01eaf07..8fd2d10c 100644
+--- a/docs/configuration/environment_variables.md
++++ b/docs/configuration/environment_variables.md
+@@ -131,9 +131,29 @@ settings.
+ | Name | Type and default | Applies to and read time | Precedence and invalid values | Lifecycle |
+ | --- | --- | --- | --- | --- |
+ | `VLLM_OMNI_FUSED_QK_NORM_ROPE_MIN_TOKENS` | Non-negative integer; unset or empty means each consumer's own default (Boogu-Image: `2048`; MammothModa2: `0`; Flux.2: `0`; Z-Image: `0` when its integration is present; other models set their defaults at the call site) | Token gate of the shared `fused_qk_norm_rope` / `fused_joint_qkv_norm_rope` ops: a rotary table is packed for a fused kernel only when it spans at least this many positions (`B*S`); read at forward time | Environment-only. `0` = always fuse; a very large value disables the fused path. Any other value raises `ValueError` on the first forward. The crossover is host-dependent; re-benchmark before overriding. | Experimental performance control |
++| `VLLM_OMNI_FUSED_QK_NORM_ROPE_NUMERICS` | `fast` (default; unset or empty) or `vllm_cuda_128` | Numerical preset of the shared Q/K RMSNorm and RoPE operators; read at each operator call | `fast` keeps the measured default arithmetic. `vllm_cuda_128` selects the tested vLLM CUDA `vllm_c` RMSNorm reduction and disables contraction of FP32 RoPE arithmetic (`rms_norm_reduction="vllm_cuda_128"`, `enable_fp_fusion=False`). Requires NVIDIA CUDA, BF16 activations and norm weights, full interleaved rotation with `head_dim=rotary_dim=128`, and `VLLM_BATCH_INVARIANT=0`; incompatible operator calls raise `ValueError`. Independent of the token gate. | Experimental numerical control |
+ | `VLLM_OMNI_SKIP_NVFP4_NAN_CLAMP` | Boolean truthy spellings: `1`, `true`, `yes`, `on`; default false | ModelOpt NVFP4 compatibility patch; read when `vllm_omni.patch` imports | Environment-only escape hatch. Any other value means false. Set only to diagnose the upstream NaN-scale issue. | Diagnostic and temporary |
+ | `VLLM_OMNI_USE_QUACK_FP8` | Boolean truthy spellings: `1`, `true`, `yes`, `on`; unset means hardware auto-detection | FP8 scaled matrix multiplication; evaluated when quack capability is selected | A set value overrides auto-detection. Any non-truthy value forces quack off. If quack cannot load, vLLM-Omni warns and falls back to FlashInfer. | Experimental performance control |
+ 
++For the tested eager BF16 interleaved `128`-dimensional case, change
++`VLLM_OMNI_FUSED_QK_NORM_ROPE_NUMERICS=fast` to `vllm_cuda_128`. The same
++operator parameters are `rms_norm_reduction="triton", enable_fp_fusion=True`
++and `rms_norm_reduction="vllm_cuda_128", enable_fp_fusion=False`, respectively.
++Explicit operator kwargs take precedence over the environment preset. If
++`enable_fp_fusion` is omitted, it is inferred from the selected reduction.
++
++The reference for this case is the vLLM CUDA `vllm_c` RMSNorm op followed
++by eager FP32 RoPE and a BF16 output cast. The preset chooses that arithmetic;
++it does not change the RMSNorm provider used elsewhere in a model. In the
++vLLM `0.29` model reproduction, both arms select
++`ir.ops.rms_norm.set_default(["vllm_c"])` inside their active vLLM configuration
++and diffusion forward contexts. Compare the same state and inputs with the
++token gate disabled (a sufficiently large `MIN_TOKENS`) and enabled
++(`MIN_TOKENS=0`), and compare output storage bits in eager mode. The operator
++reference calls `vllm._custom_ops.rms_norm(out, input, weight, epsilon)`
++directly. Existing measurements for other numerical cases retain their
++reported settings and performance.
++
+ `QUACK_CACHE_DIR` is owned by the external quack library and is not an
+ Omni-owned variable, even though vLLM-Omni supplies a persistent default when
+ it is unset.
+diff --git a/tests/diffusion/layers/test_fused_qk_norm_rope.py b/tests/diffusion/layers/test_fused_qk_norm_rope.py
+index 19a71f8d..8b362933 100644
+--- a/tests/diffusion/layers/test_fused_qk_norm_rope.py
++++ b/tests/diffusion/layers/test_fused_qk_norm_rope.py
+@@ -82,6 +82,92 @@ def test_fused_qk_norm_rope_matches_bf16_reference(seq_len):
+     torch.testing.assert_close(actual_k, expected_k, atol=0.0625, rtol=0.02)
+ 
+ 
++def _cuda_rms_norm_interleaved_reference(q, k, q_weight, k_weight, rope_table, eps):
++    """The vllm_c CUDA RMSNorm op followed by eager FP32 RoPE and BF16 output."""
++    from vllm import _custom_ops as ops
++
++    def apply(x, weight):
++        normalized = torch.empty(x.shape, device=x.device, dtype=x.dtype)
++        # Call the CUDA provider directly so IR priorities and batch-invariant
++        # settings cannot silently change the arithmetic being compared.
++        ops.rms_norm(normalized, x.contiguous(), weight, eps)
++        normalized = normalized.float()
++        cos = rope_table[:, :64].float().unsqueeze(1)
++        sin = rope_table[:, 64:].float().unsqueeze(1)
++        even, odd = normalized[..., ::2], normalized[..., 1::2]
++        return torch.stack((even * cos - odd * sin, odd * cos + even * sin), dim=-1).flatten(-2).to(x.dtype)
++
++    return apply(q, q_weight), apply(k, k_weight)
++
++
++@pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA required")
++@pytest.mark.skipif(not HAS_TRITON, reason="Triton required")
++@pytest.mark.parametrize("table_dtype", [torch.bfloat16, torch.float32])
++@pytest.mark.parametrize("eps", [1e-6, 1e-5])
++def test_fused_qk_norm_rope_vllm_cuda_128_eager_bitwise(table_dtype, eps):
++    from vllm_omni.diffusion.layers.fused_qk_norm_rope import fused_qk_norm_rope
++
++    torch.manual_seed(20261008)
++    # Q/K are projection slices, including unequal head counts and tail tiles.
++    qkv = torch.randn((257, 13, 128), device="cuda", dtype=torch.bfloat16)
++    q, k = qkv[:, :7], qkv[:, 7:10]
++    q_weight = torch.empty(128, device="cuda", dtype=torch.bfloat16).uniform_(0.5, 1.5)
++    k_weight = torch.empty_like(q_weight).uniform_(0.5, 1.5)
++    theta = torch.randn((257, 64), device="cuda", dtype=torch.float32)
++    table = torch.cat((theta.cos(), theta.sin()), dim=-1).to(table_dtype)
++    with torch.inference_mode():
++        expected = _cuda_rms_norm_interleaved_reference(q, k, q_weight, k_weight, table, eps)
++        actual = fused_qk_norm_rope(
++            q,
++            k,
++            q_weight,
++            k_weight,
++            table,
++            eps,
++            interleaved=True,
++            rms_norm_reduction="vllm_cuda_128",
++            enable_fp_fusion=False,
++        )
++    for output, reference in zip(actual, expected):
++        # Compare storage bits so signed-zero differences are also detected.
++        assert torch.equal(output.contiguous().view(torch.int16), reference.contiguous().view(torch.int16))
++
++
++@pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA required")
++@pytest.mark.skipif(not HAS_TRITON, reason="Triton required")
++def test_fused_joint_qkv_norm_rope_vllm_cuda_128_eager_bitwise(monkeypatch):
++    from vllm_omni.diffusion.layers.fused_qk_norm_rope import fused_joint_qkv_norm_rope
++
++    monkeypatch.setenv("VLLM_OMNI_FUSED_QK_NORM_ROPE_NUMERICS", "vllm_cuda_128")
++    torch.manual_seed(20261008)
++    batch, length0, length1 = 2, 5, 3
++    qkv0 = torch.randn((batch, length0, 13, 128), device="cuda", dtype=torch.bfloat16)
++    qkv1 = torch.randn((batch, length1, 13, 128), device="cuda", dtype=torch.bfloat16)
++    q0, k0, v0 = qkv0[:, :, :7], qkv0[:, :, 7:10], qkv0[:, :, 10:]
++    q1, k1, v1 = qkv1[:, :, :7], qkv1[:, :, 7:10], qkv1[:, :, 10:]
++    weights = [torch.empty(128, device="cuda", dtype=torch.bfloat16).uniform_(0.5, 1.5) for _ in range(4)]
++    theta = torch.randn((batch, length0 + length1, 64), device="cuda", dtype=torch.float32)
++    table = torch.cat((theta.cos(), theta.sin()), dim=-1)
++    with torch.inference_mode():
++        streams = []
++        for q, k, qw, kw, local_table in (
++            (q0, k0, weights[0], weights[1], table[:, :length0]),
++            (q1, k1, weights[2], weights[3], table[:, length0:]),
++        ):
++            q_ref, k_ref = _cuda_rms_norm_interleaved_reference(
++                q.reshape(-1, 7, 128), k.reshape(-1, 3, 128), qw, kw, local_table.reshape(-1, 128), 1e-6
++            )
++            streams.append((q_ref.view(batch, -1, 7, 128), k_ref.view(batch, -1, 3, 128)))
++        expected = (
++            torch.cat((streams[0][0], streams[1][0]), dim=1),
++            torch.cat((streams[0][1], streams[1][1]), dim=1),
++            torch.cat((v0, v1), dim=1),
++        )
++        actual = fused_joint_qkv_norm_rope(q0, k0, v0, q1, k1, v1, *weights, table.reshape(-1, 128), 1e-6)
++    for output, reference in zip(actual, expected):
++        assert torch.equal(output.contiguous().view(torch.int16), reference.contiguous().view(torch.int16))
++
++
+ # ---------------------------------------------------------------------------
+ # General geometry (any even head_dim, here Boogu-Image's 120) in both
+ # pairing modes, against the module's own eager reference at the same
+diff --git a/tests/diffusion/layers/test_fused_qk_norm_rope_numerics.py b/tests/diffusion/layers/test_fused_qk_norm_rope_numerics.py
+new file mode 100644
+index 00000000..5049cd32
+--- /dev/null
++++ b/tests/diffusion/layers/test_fused_qk_norm_rope_numerics.py
+@@ -0,0 +1,135 @@
++# SPDX-License-Identifier: Apache-2.0
++# SPDX-FileCopyrightText: Copyright contributors to the vLLM-Omni project
++
++from types import SimpleNamespace
++
++import pytest
++import torch
++
++pytestmark = [pytest.mark.core_model, pytest.mark.diffusion, pytest.mark.cpu]
++
++_NUMERICS = "VLLM_OMNI_FUSED_QK_NORM_ROPE_NUMERICS"
++
++
++@pytest.mark.parametrize("value", [None, "", "  ", "fast", " fast "])
++def test_numerical_preset_keeps_default_parameters(monkeypatch, value):
++    from vllm_omni.diffusion.layers.fused_qk_norm_rope import _resolve_numerical_parameters
++
++    if value is None:
++        monkeypatch.delenv(_NUMERICS, raising=False)
++    else:
++        monkeypatch.setenv(_NUMERICS, value)
++    assert _resolve_numerical_parameters(None, None) == ("triton", True)
++
++
++def test_numerical_preset_resolves_at_each_call_and_kwargs_override(monkeypatch):
++    from vllm_omni.diffusion.layers.fused_qk_norm_rope import _resolve_numerical_parameters
++
++    monkeypatch.setenv(_NUMERICS, "vllm_cuda_128")
++    assert _resolve_numerical_parameters(None, None) == ("vllm_cuda_128", False)
++    assert _resolve_numerical_parameters("triton", None) == ("triton", True)
++    assert _resolve_numerical_parameters("triton", False) == ("triton", False)
++    monkeypatch.setenv(_NUMERICS, "fast")
++    assert _resolve_numerical_parameters(None, None) == ("triton", True)
++    assert _resolve_numerical_parameters("vllm_cuda_128", None) == ("vllm_cuda_128", False)
++
++
++@pytest.mark.parametrize("value", ["bitwise", "triton", "unknown"])
++def test_invalid_numerical_preset_names_the_variable(monkeypatch, value):
++    from vllm_omni.diffusion.layers.fused_qk_norm_rope import _resolve_numerical_parameters
++
++    monkeypatch.setenv(_NUMERICS, value)
++    with pytest.raises(ValueError, match=_NUMERICS):
++        _resolve_numerical_parameters(None, None)
++    assert _resolve_numerical_parameters("triton", True) == ("triton", True)
++
++
++@pytest.mark.parametrize("operator", ["single", "joint"])
++def test_strict_numerics_rejects_cpu_instead_of_silent_fallback(monkeypatch, operator):
++    from vllm_omni.diffusion.layers.fused_qk_norm_rope import fused_joint_qkv_norm_rope, fused_qk_norm_rope
++
++    monkeypatch.setenv(_NUMERICS, "vllm_cuda_128")
++    q = torch.ones((2, 3, 128), dtype=torch.bfloat16)
++    weight = torch.ones(128, dtype=torch.bfloat16)
++    if operator == "single":
++        table = torch.ones((2, 128), dtype=torch.float32)
++
++        def call():
++            return fused_qk_norm_rope(q, q, weight, weight, table, 1e-6, interleaved=True)
++
++    else:
++        q = q.unsqueeze(0)
++        table = torch.ones((4, 128), dtype=torch.float32)
++
++        def call():
++            return fused_joint_qkv_norm_rope(q, q, q, q, q, q, weight, weight, weight, weight, table, 1e-6)
++
++    with pytest.raises(ValueError, match="CUDA"):
++        call()
++
++
++@pytest.mark.parametrize(
++    ("reduction", "fusion", "error", "message"),
++    [
++        ("invalid", True, ValueError, "rms_norm_reduction"),
++        ("triton", "False", TypeError, "bool"),
++        ("vllm_cuda_128", True, ValueError, "enable_fp_fusion=False"),
++    ],
++)
++def test_invalid_numerical_parameters_are_rejected(reduction, fusion, error, message):
++    from vllm_omni.diffusion.layers.fused_qk_norm_rope import fused_qk_norm_rope
++
++    q = torch.ones((2, 3, 128), dtype=torch.bfloat16)
++    weight = torch.ones(128, dtype=torch.bfloat16)
++    table = torch.ones((2, 128), dtype=torch.float32)
++    with pytest.raises(error, match=message):
++        fused_qk_norm_rope(
++            q,
++            q,
++            weight,
++            weight,
++            table,
++            1e-6,
++            interleaved=True,
++            rms_norm_reduction=reduction,
++            enable_fp_fusion=fusion,
++        )
++
++
++@pytest.mark.parametrize(
++    ("head_dim", "rotary_dim", "activation_dtype", "weight_device", "weight_dtype", "message"),
++    [
++        (120, 120, torch.bfloat16, "cuda", torch.bfloat16, "head_dim=rotary_dim=128"),
++        (128, 96, torch.bfloat16, "cuda", torch.bfloat16, "head_dim=rotary_dim=128"),
++        (128, 128, torch.float32, "cuda", torch.bfloat16, "BF16 CUDA activations"),
++        (128, 128, torch.bfloat16, "cpu", torch.bfloat16, "activation CUDA device"),
++        (128, 128, torch.bfloat16, "cuda", torch.float32, "BF16 norm weights"),
++    ],
++)
++def test_strict_numerics_rejects_unsupported_contract(
++    monkeypatch, head_dim, rotary_dim, activation_dtype, weight_device, weight_dtype, message
++):
++    from vllm_omni.diffusion.layers import fused_qk_norm_rope as fused
++
++    # Validate metadata without allocating CUDA tensors on CPU test hosts.
++    monkeypatch.setattr(fused, "HAS_TRITON", True)
++    monkeypatch.setattr(fused, "current_platform", SimpleNamespace(is_cuda=lambda: True))
++    activation = SimpleNamespace(device=torch.device("cuda"), dtype=activation_dtype)
++    weight = SimpleNamespace(device=torch.device(weight_device), dtype=weight_dtype)
++    with pytest.raises(ValueError, match=message):
++        fused._validate_reduction_parameters(
++            (activation,), (weight,), head_dim, rotary_dim, True, "vllm_cuda_128", False
++        )
++
++
++def test_strict_numerics_rejects_batch_invariant_reference(monkeypatch):
++    import vllm
++
++    from vllm_omni.diffusion.layers import fused_qk_norm_rope as fused
++
++    monkeypatch.setattr(fused, "HAS_TRITON", True)
++    monkeypatch.setattr(fused, "current_platform", SimpleNamespace(is_cuda=lambda: True))
++    monkeypatch.setattr(vllm, "envs", SimpleNamespace(VLLM_BATCH_INVARIANT=True), raising=False)
++    tensor = SimpleNamespace(device=torch.device("cuda"), dtype=torch.bfloat16)
++    with pytest.raises(ValueError, match="VLLM_BATCH_INVARIANT=0"):
++        fused._validate_reduction_parameters((tensor,), (tensor,), 128, 128, True, "vllm_cuda_128", False)
+diff --git a/vllm_omni/config/environment_variable_inventory.py b/vllm_omni/config/environment_variable_inventory.py
+index 0e221317..4687d557 100644
+--- a/vllm_omni/config/environment_variable_inventory.py
++++ b/vllm_omni/config/environment_variable_inventory.py
+@@ -69,6 +69,7 @@ _PUBLIC_OMNI = (
+     "VLLM_OMNI_ASYNC_OUTPUT_TIMEOUT",
+     "VLLM_OMNI_EVENT_DRIVEN_ORCH",
+     "VLLM_OMNI_FUSED_QK_NORM_ROPE_MIN_TOKENS",
++    "VLLM_OMNI_FUSED_QK_NORM_ROPE_NUMERICS",
+     "VLLM_OMNI_INPUT_WAIT_TIMEOUT_S",
+     "VLLM_OMNI_NIXL_LEASE_S",
+     "VLLM_OMNI_NIXL_XFER_TIMEOUT_S",
+diff --git a/vllm_omni/diffusion/envs.py b/vllm_omni/diffusion/envs.py
+index 4cbc0907..f355f387 100644
+--- a/vllm_omni/diffusion/envs.py
++++ b/vllm_omni/diffusion/envs.py
+@@ -16,6 +16,7 @@ if TYPE_CHECKING:
+     CUDA_HOME: str | None = None
+     LOCAL_RANK: int = 0
+     VLLM_OMNI_FUSED_QK_NORM_ROPE_MIN_TOKENS: str | None = None
++    VLLM_OMNI_FUSED_QK_NORM_ROPE_NUMERICS: str | None = None
+ 
+ environment_variables: dict[str, Callable[[], Any]] = {
+     # ================== Runtime Env Vars ==================
+@@ -34,6 +35,11 @@ environment_variables: dict[str, Callable[[], Any]] = {
+     # "0" = always fuse; unset = each consumer's own measured default. Raw
+     # string or None; validated by fused_qk_norm_rope_min_tokens().
+     "VLLM_OMNI_FUSED_QK_NORM_ROPE_MIN_TOKENS": lambda: os.environ.get("VLLM_OMNI_FUSED_QK_NORM_ROPE_MIN_TOKENS", None),
++    # Numerical preset of the shared CUDA QK RMSNorm/RoPE kernels. "fast"
++    # preserves the default arithmetic; "vllm_cuda_128" matches the tested
++    # BF16 D=128 vLLM CUDA RMSNorm reduction with RoPE contraction disabled.
++    # The operator validates supported geometry and runtime settings.
++    "VLLM_OMNI_FUSED_QK_NORM_ROPE_NUMERICS": lambda: os.environ.get("VLLM_OMNI_FUSED_QK_NORM_ROPE_NUMERICS", None),
+ }
+ 
+ 
+diff --git a/vllm_omni/diffusion/layers/fused_qk_norm_rope.py b/vllm_omni/diffusion/layers/fused_qk_norm_rope.py
+index 94c7dacb..a91c5b11 100644
+--- a/vllm_omni/diffusion/layers/fused_qk_norm_rope.py
++++ b/vllm_omni/diffusion/layers/fused_qk_norm_rope.py
+@@ -27,6 +27,14 @@ two); the half-split mode keeps the pre-existing kernel and its MiniMax-H3
+ geometry contract (``head_dim == 128``, ``rotary_dim == 96``). Ascend
+ composes its RMSNorm and rotary fused primitives on the MiniMax-H3 geometry;
+ unsupported inputs use the eager reference.
++
++Numerical defaults use Triton's reduction and floating-point contraction.
++Set ``VLLM_OMNI_FUSED_QK_NORM_ROPE_NUMERICS=vllm_cuda_128`` or pass
++``rms_norm_reduction="vllm_cuda_128", enable_fp_fusion=False`` to match the
++tested vLLM CUDA ``vllm_c`` RMSNorm reduction followed by eager FP32 interleaved RoPE.
++This preset requires NVIDIA CUDA, BF16 inputs and norm weights, and full
++``head_dim == rotary_dim == 128`` rotation; unsupported inputs raise instead
++of silently selecting different arithmetic. The token gate is independent.
+ """
+ 
+ from __future__ import annotations
+@@ -196,6 +204,7 @@ if HAS_TRITON:
+         rotary_half: tl.constexpr,
+         eps: tl.constexpr,
+         interleaved: tl.constexpr,
++        rms_norm_reduction: tl.constexpr,
+     ):
+         """One ``[heads_per_program, padded_dim]`` RMSNorm + RoPE tile.
+ 
+@@ -207,7 +216,31 @@ if HAS_TRITON:
+         offsets = in_row * in_stride_t + heads[:, None] * in_stride_h + dims[None, :] * in_stride_d
+         x = tl.load(in_ptr + offsets, mask=mask, other=0.0).to(tl.float32)
+         weight = tl.load(weight_ptr + dims, mask=dim_mask, other=0.0).to(tl.float32)
+-        inv_rms = tl.rsqrt(tl.sum(x * x, axis=1) / head_dim + eps)
++        if rms_norm_reduction == "vllm_cuda_128":
++            # Match the vLLM CUDA RMSNorm reduction for BF16 D=128:
++            # 16 lanes each accumulate 8 consecutive values with FMA,
++            # then use the same ordered lane reduction. Explicit FMA here
++            # is retained even when contraction of RoPE arithmetic is off.
++            tl.static_assert(head_dim == 128 and rotary_half == 64 and interleaved)
++            hpp: tl.constexpr = heads.shape[0]
++            groups = tl.arange(0, 16)
++            head_mask = tl.gather(mask, tl.full((hpp, 1), 0, tl.int32), axis=1)
++            row = in_row * in_stride_t + heads[:, None] * in_stride_h
++            acc = tl.full((hpp, 16), 0, tl.float32)
++            for element in tl.static_range(8):
++                xv = tl.load(
++                    in_ptr + row + (groups * 8 + element)[None, :] * in_stride_d, mask=head_mask, other=0.0
++                ).to(tl.float32)
++                acc = tl.fma(xv, xv, acc)
++            for step in tl.static_range(4):
++                distance = 1 << step
++                indices = tl.broadcast_to((groups + distance & 15)[None, :], (hpp, 16))
++                other = tl.gather(acc, indices, axis=1)
++                acc = tl.where((groups + distance)[None, :] < 16, acc + other, acc)
++            total = tl.sum(tl.where(groups[None, :] == 0, acc, 0.0), axis=1)
++            inv_rms = tl.rsqrt(total / head_dim + eps)
++        else:
++            inv_rms = tl.rsqrt(tl.sum(x * x, axis=1) / head_dim + eps)
+         normalized = (x * inv_rms[:, None] * weight[None, :]).to(tl.bfloat16)
+ 
+         rotary_dim = rotary_half * 2
+@@ -275,6 +308,7 @@ if HAS_TRITON:
+         heads_per_program: tl.constexpr,
+         q_head_groups: tl.constexpr,
+         interleaved: tl.constexpr,
++        rms_norm_reduction: tl.constexpr,
+     ):
+         """Fused per-head RMSNorm + RoPE for Q and K in one launch.
+ 
+@@ -348,6 +382,7 @@ if HAS_TRITON:
+             rotary_half,
+             eps,
+             interleaved,
++            rms_norm_reduction,
+         )
+ 
+     @triton.jit
+@@ -406,6 +441,7 @@ if HAS_TRITON:
+         q_head_groups: tl.constexpr,
+         kv_head_groups: tl.constexpr,
+         interleaved: tl.constexpr,
++        rms_norm_reduction: tl.constexpr,
+     ):
+         """Two-stream Q/K RMSNorm + RoPE and V gather, written in attention's
+         joint input layout.
+@@ -499,6 +535,7 @@ if HAS_TRITON:
+                 rotary_half,
+                 eps,
+                 interleaved,
++                rms_norm_reduction,
+             )
+         else:
+             offsets = in_row * in_stride_t + heads[:, None] * in_stride_h + dims[None, :] * in_stride_d
+@@ -651,6 +688,60 @@ def _fused_npu_supported(
+     )
+ 
+ 
++_NUMERICS_ENV = "VLLM_OMNI_FUSED_QK_NORM_ROPE_NUMERICS"
++
++
++def _resolve_numerical_parameters(
++    rms_norm_reduction: str | None,
++    enable_fp_fusion: bool | None,
++) -> tuple[str, bool]:
++    """Resolve the numerical preset, with explicit operator kwargs taking precedence."""
++    if rms_norm_reduction is None:
++        raw = envs.VLLM_OMNI_FUSED_QK_NORM_ROPE_NUMERICS
++        mode = "fast" if raw is None or raw.strip() == "" else raw.strip()
++        if mode not in ("fast", "vllm_cuda_128"):
++            raise ValueError(f"{_NUMERICS_ENV} must be 'fast' or 'vllm_cuda_128', got {raw!r}")
++        rms_norm_reduction = "triton" if mode == "fast" else mode
++    if enable_fp_fusion is None:
++        enable_fp_fusion = rms_norm_reduction != "vllm_cuda_128"
++    return rms_norm_reduction, enable_fp_fusion
++
++
++def _validate_reduction_parameters(
++    activations: tuple[torch.Tensor, ...],
++    weights: tuple[torch.Tensor, ...],
++    head_dim: int,
++    rotary_dim: int,
++    interleaved: bool,
++    rms_norm_reduction: str,
++    enable_fp_fusion: bool,
++) -> None:
++    if rms_norm_reduction == "triton" and enable_fp_fusion is True:
++        return
++    if rms_norm_reduction not in ("triton", "vllm_cuda_128"):
++        raise ValueError("rms_norm_reduction must be 'triton' or 'vllm_cuda_128'")
++    if not isinstance(enable_fp_fusion, bool):
++        raise TypeError("enable_fp_fusion must be a bool")
++    if not interleaved and not enable_fp_fusion:
++        raise ValueError("enable_fp_fusion=False requires interleaved=True")
++    if rms_norm_reduction == "vllm_cuda_128":
++        if enable_fp_fusion:
++            raise ValueError("vllm_cuda_128 requires enable_fp_fusion=False")
++        if not (HAS_TRITON and current_platform.is_cuda()):
++            raise ValueError("vllm_cuda_128 requires the NVIDIA CUDA Triton provider")
++        if any(t.device.type != "cuda" or t.dtype != torch.bfloat16 for t in activations):
++            raise ValueError("vllm_cuda_128 requires BF16 CUDA activations")
++        if any(w.dtype != torch.bfloat16 or w.device != activations[0].device for w in weights):
++            raise ValueError("vllm_cuda_128 requires BF16 norm weights on the activation CUDA device")
++        if not (head_dim == 128 and rotary_dim == 128 and interleaved):
++            raise ValueError("vllm_cuda_128 requires head_dim=rotary_dim=128 and interleaved=True")
++        # Batch-invariant RMSNorm selects different arithmetic in vLLM.
++        from vllm import envs as vllm_envs
++
++        if getattr(vllm_envs, "VLLM_BATCH_INVARIANT", False):
++            raise ValueError("vllm_cuda_128 requires VLLM_BATCH_INVARIANT=0")
++
++
+ def _launch_fused_rms_norm_rope(
+     x: torch.Tensor,
+     weight: torch.Tensor,
+@@ -693,6 +784,8 @@ def _launch_fused_qk_norm_rope(
+     rope_table: torch.Tensor,
+     eps: float,
+     interleaved: bool,
++    rms_norm_reduction: str = "triton",
++    enable_fp_fusion: bool = True,
+ ) -> tuple[torch.Tensor, torch.Tensor]:
+     tokens, q_heads, head_dim = q.shape
+     kv_heads = k.shape[1]
+@@ -744,6 +837,8 @@ def _launch_fused_qk_norm_rope(
+         interleaved=interleaved,
+         num_warps=num_warps,
+         num_stages=num_stages,
++        rms_norm_reduction=rms_norm_reduction,
++        enable_fp_fusion=enable_fp_fusion,
+     )
+     return out_q, out_k
+ 
+@@ -758,7 +853,12 @@ def _fused_qk_norm_rope_impl(
+     head_dim: int,
+     rotary_dim: int,
+     interleaved: bool,
++    rms_norm_reduction: str = "triton",
++    enable_fp_fusion: bool = True,
+ ) -> tuple[torch.Tensor, torch.Tensor]:
++    _validate_reduction_parameters(
++        (q, k), (q_weight, k_weight), head_dim, rotary_dim, interleaved, rms_norm_reduction, enable_fp_fusion
++    )
+     if _fused_npu_supported(q, k, head_dim, rotary_dim, interleaved):
+         return _npu_qk_norm_rope(
+             q,
+@@ -782,7 +882,17 @@ def _fused_qk_norm_rope_impl(
+             interleaved,
+         )
+     if interleaved:
+-        return _launch_fused_qk_norm_rope(q, k, q_weight, k_weight, rope_table, eps, interleaved=True)
++        return _launch_fused_qk_norm_rope(
++            q,
++            k,
++            q_weight,
++            k_weight,
++            rope_table,
++            eps,
++            interleaved=True,
++            rms_norm_reduction=rms_norm_reduction,
++            enable_fp_fusion=enable_fp_fusion,
++        )
+     # Half-split production traffic keeps the historical per-tensor kernel;
+     # _qk_norm_rope_kernel's half-split mode awaits the maintainers' call.
+     return (
+@@ -801,6 +911,8 @@ def _fused_qk_norm_rope_fake(
+     head_dim: int,
+     rotary_dim: int,
+     interleaved: bool,
++    rms_norm_reduction: str = "triton",
++    enable_fp_fusion: bool = True,
+ ) -> tuple[torch.Tensor, torch.Tensor]:
+     del q_weight, k_weight, rope_table, eps, head_dim, rotary_dim, interleaved
+     return torch.empty_like(q), torch.empty_like(k)
+@@ -831,6 +943,8 @@ def _launch_fused_joint_qkv_norm_rope(
+     rope_table: torch.Tensor,
+     eps: float,
+     interleaved: bool,
++    rms_norm_reduction: str = "triton",
++    enable_fp_fusion: bool = True,
+ ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+     """Launch the two-stream kernel; ``q_i``/``k_i``/``v_i`` are ``[B, S_i, H, D]``."""
+     batch, seq_len_0, q_heads, head_dim = q0.shape
+@@ -900,6 +1014,8 @@ def _launch_fused_joint_qkv_norm_rope(
+         interleaved=interleaved,
+         num_warps=num_warps,
+         num_stages=num_stages,
++        rms_norm_reduction=rms_norm_reduction,
++        enable_fp_fusion=enable_fp_fusion,
+     )
+     return out_q, out_k, out_v
+ 
+@@ -953,7 +1069,18 @@ def _fused_joint_qkv_norm_rope_impl(
+     head_dim: int,
+     rotary_dim: int,
+     interleaved: bool,
++    rms_norm_reduction: str = "triton",
++    enable_fp_fusion: bool = True,
+ ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
++    _validate_reduction_parameters(
++        (q0, k0, v0, q1, k1, v1),
++        (q0_weight, k0_weight, q1_weight, k1_weight),
++        head_dim,
++        rotary_dim,
++        interleaved,
++        rms_norm_reduction,
++        enable_fp_fusion,
++    )
+     if not _fused_cuda_supported(q0, k0, head_dim, rotary_dim, interleaved) or not interleaved:
+         # The half-split geometry gate above is the MiniMax-H3 contract of the
+         # per-tensor kernel; the joint kernel takes any even rotary width, but
+@@ -976,7 +1103,21 @@ def _fused_joint_qkv_norm_rope_impl(
+             interleaved,
+         )
+     return _launch_fused_joint_qkv_norm_rope(
+-        q0, k0, v0, q1, k1, v1, q0_weight, k0_weight, q1_weight, k1_weight, rope_table, eps, interleaved=True
++        q0,
++        k0,
++        v0,
++        q1,
++        k1,
++        v1,
++        q0_weight,
++        k0_weight,
++        q1_weight,
++        k1_weight,
++        rope_table,
++        eps,
++        interleaved=True,
++        rms_norm_reduction=rms_norm_reduction,
++        enable_fp_fusion=enable_fp_fusion,
+     )
+ 
+ 
+@@ -996,6 +1137,8 @@ def _fused_joint_qkv_norm_rope_fake(
+     head_dim: int,
+     rotary_dim: int,
+     interleaved: bool,
++    rms_norm_reduction: str = "triton",
++    enable_fp_fusion: bool = True,
+ ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+     del q0_weight, k0_weight, q1_weight, k1_weight, rope_table, eps, head_dim, rotary_dim, interleaved
+     seq_total = q0.shape[1] + q1.shape[1]
+@@ -1028,6 +1171,8 @@ def fused_joint_qkv_norm_rope(
+     *,
+     rotary_dim: int | None = None,
+     interleaved: bool = True,
++    rms_norm_reduction: str | None = None,
++    enable_fp_fusion: bool | None = None,
+ ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+     """Fused two-stream Q/K RMSNorm + RoPE (and V gather) into the joint sequence.
+ 
+@@ -1075,12 +1220,23 @@ def fused_joint_qkv_norm_rope(
+     if rope_table.shape != (tokens, rotary_dim):
+         raise ValueError(f"Expected rope_table [{tokens}, {rotary_dim}], got {tuple(rope_table.shape)}")
+ 
++    rms_norm_reduction, enable_fp_fusion = _resolve_numerical_parameters(rms_norm_reduction, enable_fp_fusion)
+     weights = tuple(w.contiguous() for w in weights)
+     rope_table = rope_table.contiguous()
+     if not _fused_cuda_supported(q0, k0, head_dim, rotary_dim, interleaved) or not interleaved:
+-        return _fused_joint_qkv_norm_rope_impl(*streams, *weights, rope_table, eps, head_dim, rotary_dim, interleaved)
++        return _fused_joint_qkv_norm_rope_impl(
++            *streams,
++            *weights,
++            rope_table,
++            eps,
++            head_dim,
++            rotary_dim,
++            interleaved,
++            rms_norm_reduction,
++            enable_fp_fusion,
++        )
+     return torch.ops.vllm_omni.fused_joint_qkv_norm_rope(
+-        *streams, *weights, rope_table, eps, head_dim, rotary_dim, interleaved
++        *streams, *weights, rope_table, eps, head_dim, rotary_dim, interleaved, rms_norm_reduction, enable_fp_fusion
+     )
+ 
+ 
+@@ -1174,6 +1330,8 @@ def fused_qk_norm_rope(
+     head_dim: int | None = None,
+     rotary_dim: int | None = None,
+     interleaved: bool = False,
++    rms_norm_reduction: str | None = None,
++    enable_fp_fusion: bool | None = None,
+ ) -> tuple[torch.Tensor, torch.Tensor]:
+     """Apply Q/K RMSNorm and packed RoPE (half-split or adjacent pairs)."""
+     if q.ndim != 3 or k.ndim != 3:
+@@ -1203,10 +1361,14 @@ def fused_qk_norm_rope(
+     if rope_table.shape != (q.shape[0], rotary_dim):
+         raise ValueError(f"Expected rope_table [{q.shape[0]}, {rotary_dim}], got {tuple(rope_table.shape)}")
+ 
++    rms_norm_reduction, enable_fp_fusion = _resolve_numerical_parameters(rms_norm_reduction, enable_fp_fusion)
+     q_weight = q_weight.contiguous()
+     k_weight = k_weight.contiguous()
+     rope_table = rope_table.contiguous()
+     if _fused_npu_supported(q, k, head_dim, rotary_dim, interleaved):
++        _validate_reduction_parameters(
++            (q, k), (q_weight, k_weight), head_dim, rotary_dim, interleaved, rms_norm_reduction, enable_fp_fusion
++        )
+         return _npu_qk_norm_rope(
+             q,
+             k,
+@@ -1227,6 +1389,8 @@ def fused_qk_norm_rope(
+             head_dim,
+             rotary_dim,
+             interleaved,
++            rms_norm_reduction,
++            enable_fp_fusion,
+         )
+     return torch.ops.vllm_omni.fused_qk_norm_rope(
+         q,
+@@ -1238,6 +1402,8 @@ def fused_qk_norm_rope(
+         head_dim,
+         rotary_dim,
+         interleaved,
++        rms_norm_reduction,
++        enable_fp_fusion,
+     )
+ 
+ 
